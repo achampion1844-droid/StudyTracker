@@ -8,7 +8,15 @@ module.exports = {
   ],
   presets: [require("nativewind/preset")],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        customBgBlue: '#D9FAF7',
+        customButtonBlue: '#24a0ed',
+        customButtonHoverBlue: '#2690D5',
+        customButtonActiveBlue: '#2781BD',
+
+      }
+    },
   },
   plugins: [],
 }
