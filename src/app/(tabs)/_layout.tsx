@@ -6,8 +6,6 @@ export default function TabLayout() {
             <Tabs.Screen name='index' />
             <Tabs.Screen name='StudyTracker' options={{headerShown: false}} />
             <Tabs.Screen name='home' options={{headerShown: false}} />
-            <Tabs.Screen name='study' options={{headerShown: false}} />
-            <Tabs.Screen name='studyTracker' options={{href: null}} />
         </Tabs>
     )
 }
