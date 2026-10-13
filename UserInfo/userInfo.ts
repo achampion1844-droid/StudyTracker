@@ -226,3 +226,65 @@ export function getUserStudyItems() {
     },]
     return studyItems
 }
+
+
+
+export type subjectInfoType = {
+    icon: ImageSourcePropType
+    subjectName: Subjects
+    numSubStudyItems: number
+    id: string
+}
+
+enum Subjects {
+    Chemistry = 'Chemistry',
+    Math = 'Math',
+    English = 'English',
+    Biology = 'Biology',
+    Physics = 'Physics',
+    CompSci = 'CompSci',
+    History = 'History',
+}
+
+
+export function getSubjectInfo(): subjectInfoType[] {
+    const studyInfoObj:subjectInfoType[] = [
+        {
+            icon: require('../assets/icons/BookIcon.jpg'),
+            subjectName: Subjects.Math,
+            numSubStudyItems: 3,
+            id: '12344562'
+        },
+        {
+            icon: require('../assets/icons/BookIcon.jpg'),
+            subjectName: Subjects.English,
+            numSubStudyItems: 3,
+            id: '643563456'
+        },
+        {
+            icon: require('../assets/icons/BookIcon.jpg'),
+            subjectName: Subjects.Biology,
+            numSubStudyItems: 3,
+            id: '23452345'
+        },
+        {
+            icon: require('../assets/icons/BookIcon.jpg'),
+            subjectName: Subjects.Physics,
+            numSubStudyItems: 3,
+            id: '123263444562'
+        },
+        {
+            icon: require('../assets/icons/BookIcon.jpg'),
+            subjectName: Subjects.CompSci,
+            numSubStudyItems: 3,
+            id: '56376547'
+        },
+        {
+            icon: require('../assets/icons/BookIcon.jpg'),
+            subjectName: Subjects.History,
+            numSubStudyItems: 3,
+            id: '2345235'
+        },
+    ]
+    return studyInfoObj
+}

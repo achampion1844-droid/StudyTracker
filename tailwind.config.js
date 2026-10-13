@@ -14,6 +14,7 @@ module.exports = {
         customButtonBlue: '#24a0ed',
         customButtonHoverBlue: '#2690D5',
         customButtonActiveBlue: '#2781BD',
+        customStudyButton: '#02BDE3',
 
       }
     },
