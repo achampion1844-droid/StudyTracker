@@ -1,19 +1,15 @@
 import { View, Text, Pressable } from 'react-native'
 import React from 'react'
 
-const DateButton = ({id, activeID, returnId}: {id:string, activeID:string, returnId: (id:string) => void}) => {
-    function buttonPressed() {
-      returnId(id)
-    }
+const DateButton = ({date, id, activeID, setActiveId}: {date:number, id:string, activeID:string, setActiveId: (id: string) => void}) => {
+
     
   return (
-    <View>
-      <Pressable onPress={buttonPressed}>
-        <View className={`${activeID===id ? 'bg-black': 'bg-white'} h-10 w-10 rounded-full justify-center items-center`}>
-            <Text className={`${activeID===id ? 'text-white': 'text-black'}`}>12</Text>
+      <Pressable onPress={() => {setActiveId(id)}}>
+        <View className={`${activeID===id ? 'bg-black': 'bg-white'} h-10 w-10 rounded-full justify-center items-center border-black border-2`}>
+            <Text className={`${activeID===id ? 'text-white': 'text-black'}`}>{date}</Text>
         </View>
       </Pressable>
-    </View>
   )
 }
 
