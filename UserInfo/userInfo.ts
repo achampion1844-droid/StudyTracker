@@ -6,7 +6,18 @@ type userDataType = {
     email: string
 }
 
-
+export enum Subjects {
+    Chemistry = 'Chemistry',
+    Math = 'Math',
+    English = 'English',
+    Biology = 'Biology',
+    Physics = 'Physics',
+    Programming = 'Programming',
+    History = 'History',
+    Psychology = 'Psychology',
+    Accounting = 'Accounting',
+    Wind_Synphony = 'Wind_Synphony'
+}
 
 export type studyItemsType = {
     assignmentName: string
@@ -14,7 +25,7 @@ export type studyItemsType = {
     assignmentDescription: string
     dateAdded: string
     remainingStudySessions: number
-    subject: string
+    subject: Subjects
     icon: ImageSourcePropType
     isCompleted: boolean
     dateaddedObj: Date
@@ -39,187 +50,187 @@ const formattedDate: string = date.toLocaleDateString('en-US', {
 
 export function getUserStudyItems() {
     const studyItems:studyItemsType[] = [{
-        assignmentName: 'Chem 1-1',
-        assignmentID: 5432453234523452353452535234,
-        assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
+        assignmentName: 'Chem 3-2',
+        assignmentID: 5433452535234,
+        assignmentDescription: 'extremely tricky namings',
         dateAdded: formattedDate,
-        remainingStudySessions: 2,
-        subject: 'Chemistry',
+        remainingStudySessions: 3,
+        subject: Subjects.Physics,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },
     {
-        assignmentName: 'Chem 1-1',
-        assignmentID: 5432453345634845687684765472535234,
-        assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
+        assignmentName: 'Psyche 1-1',
+        assignmentID: 535234,
+        assignmentDescription: 'Human development',
+        dateAdded: formattedDate,
+        remainingStudySessions: 1,
+        subject: Subjects.Psychology,
+        icon: require('../assets/icons/BookIcon.jpg'),
+        isCompleted: false,
+        dateaddedObj: date
+    },
+{
+        assignmentName: 'Gym',
+        assignmentID: 54324534467946732535,
+        assignmentDescription: 'Which muscle groups are activated during curls',
+        dateAdded: formattedDate,
+        remainingStudySessions: 4,
+        subject: Subjects.Chemistry,
+        icon: require('../assets/icons/BookIcon.jpg'),
+        isCompleted: false,
+        dateaddedObj: date
+    },
+{
+        assignmentName: 'Accounting',
+        assignmentID: 54324534563457645,
+        assignmentDescription: 'Credits or debits',
+        dateAdded: formattedDate,
+        remainingStudySessions: 5,
+        subject: Subjects.Accounting,
+        icon: require('../assets/icons/BookIcon.jpg'),
+        isCompleted: false,
+        dateaddedObj: date
+    },
+{
+        assignmentName: 'Euphonium 1-9',
+        assignmentID: 234644532535234,
+        assignmentDescription: 'Tried to hit a high F',
+        dateAdded: formattedDate,
+        remainingStudySessions: 1,
+        subject: Subjects.Wind_Synphony,
+        icon: require('../assets/icons/BookIcon.jpg'),
+        isCompleted: false,
+        dateaddedObj: date
+    },
+{
+        assignmentName: 'Piano',
+        assignmentID: 54334532535234,
+        assignmentDescription: 'Aimed for 120 beats per minute',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Wind_Synphony,
+        icon: require('../assets/icons/BookIcon.jpg'),
+        isCompleted: false,
+        dateaddedObj: date
+    },
+{
+        assignmentName: 'Programming',
+        assignmentID: 54324534324668,
+        assignmentDescription: 'Worked on the study tracker project',
+        dateAdded: formattedDate,
+        remainingStudySessions: 2,
+        subject: Subjects.Programming,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },
 {
         assignmentName: 'Chem 1-1',
-        assignmentID: 5432453456345634563456786548467946732535234,
+        assignmentID: 5433456345634563496784,
         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },
 {
         assignmentName: 'Chem 1-1',
-        assignmentID: 5432453456345764587685632535234,
+        assignmentID: 543234569678535234,
         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },
 {
         assignmentName: 'Chem 1-1',
-        assignmentID: 543223452346547644532535234,
+        assignmentID: 543234563458568456,
         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },
 {
         assignmentName: 'Chem 1-1',
-        assignmentID: 5433456345643568674724532535234,
+        assignmentID: 3456584678967,
         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },
 {
         assignmentName: 'Chem 1-1',
-        assignmentID: 54324537654765475674652535234,
+        assignmentID: 5432452398670678,
         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },
 {
         assignmentName: 'Chem 1-1',
-        assignmentID: 543345634563456346345624532535234,
+        assignmentID: 545476532468,
         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },
 {
         assignmentName: 'Chem 1-1',
-        assignmentID: 543245329867967896789678535234,
+        assignmentID: 54396445,
         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },
 {
         assignmentName: 'Chem 1-1',
-        assignmentID: 5432345634584678764532535234,
+        assignmentID: 54323456548748563,
         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },
 {
         assignmentName: 'Chem 1-1',
-        assignmentID: 345634584678967,
+        assignmentID: 254325672765535234,
         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
-        icon: require('../assets/icons/BookIcon.jpg'),
-        isCompleted: false,
-        dateaddedObj: date
-    },
-{
-        assignmentName: 'Chem 1-1',
-        assignmentID: 5432452345645674658767595432535234,
-        assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
-        dateAdded: formattedDate,
-        remainingStudySessions: 2,
-        subject: 'Chemistry',
-        icon: require('../assets/icons/BookIcon.jpg'),
-        isCompleted: false,
-        dateaddedObj: date
-    },
-{
-        assignmentName: 'Chem 1-1',
-        assignmentID: 543245345643578654832535234,
-        assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
-        dateAdded: formattedDate,
-        remainingStudySessions: 2,
-        subject: 'Chemistry',
-        icon: require('../assets/icons/BookIcon.jpg'),
-        isCompleted: false,
-        dateaddedObj: date
-    },
-{
-        assignmentName: 'Chem 1-1',
-        assignmentID: 543248765785678532535234,
-        assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
-        dateAdded: formattedDate,
-        remainingStudySessions: 2,
-        subject: 'Chemistry',
-        icon: require('../assets/icons/BookIcon.jpg'),
-        isCompleted: false,
-        dateaddedObj: date
-    },
-{
-        assignmentName: 'Chem 1-1',
-        assignmentID: 543245432567532535234,
-        assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
-        dateAdded: formattedDate,
-        remainingStudySessions: 2,
-        subject: 'Chemistry',
-        icon: require('../assets/icons/BookIcon.jpg'),
-        isCompleted: false,
-        dateaddedObj: date
-    },
-{
-        assignmentName: 'Chem 1-1',
-        assignmentID: 543245323423423421232535234,
-        assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
-        dateAdded: formattedDate,
-        remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
     },{
         assignmentName: 'Chem 1-1',
-        assignmentID: 54324234234235234,
+        assignmentID: 4234234565234,
         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
         dateAdded: formattedDate,
         remainingStudySessions: 2,
-        subject: 'Chemistry',
+        subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
         dateaddedObj: date
@@ -236,15 +247,7 @@ export type subjectInfoType = {
     id: string
 }
 
-enum Subjects {
-    Chemistry = 'Chemistry',
-    Math = 'Math',
-    English = 'English',
-    Biology = 'Biology',
-    Physics = 'Physics',
-    CompSci = 'CompSci',
-    History = 'History',
-}
+
 
 
 export function getSubjectInfo(): subjectInfoType[] {
@@ -254,6 +257,12 @@ export function getSubjectInfo(): subjectInfoType[] {
             subjectName: Subjects.Math,
             numSubStudyItems: 3,
             id: '12344562'
+        },
+        {
+            icon: require('../assets/icons/BookIcon.jpg'),
+            subjectName: Subjects.Chemistry,
+            numSubStudyItems: 3,
+            id: '543212'
         },
         {
             icon: require('../assets/icons/BookIcon.jpg'),
@@ -275,7 +284,7 @@ export function getSubjectInfo(): subjectInfoType[] {
         },
         {
             icon: require('../assets/icons/BookIcon.jpg'),
-            subjectName: Subjects.CompSci,
+            subjectName: Subjects.Programming,
             numSubStudyItems: 3,
             id: '56376547'
         },

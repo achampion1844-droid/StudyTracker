@@ -1,19 +1,20 @@
 import { View, Text } from 'react-native'
-import React from 'react'
+import React, { useState } from 'react'
 import { ScrollView } from 'react-native'
 import SubjectButton from './SubjectButton'
-import { studyItemsType, subjectInfoType } from '../UserInfo/userInfo'
+import { studyItemsType, subjectInfoType, Subjects } from '../UserInfo/userInfo'
 
-const SubjectScrollView = ({studySubjects}: {studySubjects: subjectInfoType[]}) => {
+const SubjectScrollView = ({studySubjects, filterBySubject}: {studySubjects: subjectInfoType[], filterBySubject: (subjectName:Subjects) => void}) => {
+  const [isActive, setIsActive] = useState('')
   return (
     <ScrollView 
         horizontal 
-        className='border-orange-600 border-6 h-20 ml-4 mb-4'
+        className='h-20 ml-4 mb-4'
         showsHorizontalScrollIndicator={false}
         >
             <View className='flex-row gap-6 mr-12'>
                 {studySubjects.map((subject) => (
-                    <SubjectButton key={subject.id} id={subject.id} icon={subject.icon} subjectName={subject.subjectName} numSubStudyItems={subject.numSubStudyItems}/>
+                    <SubjectButton isActive={isActive} setIsActive={setIsActive} key={subject.id} id={subject.id} icon={subject.icon} subjectName={subject.subjectName} numSubStudyItems={subject.numSubStudyItems} filterBySubject={filterBySubject}/>
                 ))}
             </View>
     </ScrollView>

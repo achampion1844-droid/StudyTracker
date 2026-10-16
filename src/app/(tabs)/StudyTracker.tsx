@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, Button, Pressable, FlatList, Image, TouchableOpacity, InteractionManager, Dimensions } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { dateObjType, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, subjectInfoType } from '../../../UserInfo/userInfo'
+import { dateObjType, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, subjectInfoType, Subjects } from '../../../UserInfo/userInfo'
 import ToggleButton from '../../../components/Button'
 import Icon from '../../../components/Icon'
 import SubjectButton from '../../../components/SubjectButton'
@@ -11,6 +11,7 @@ import StudyHeader from '../../../components/StudyHeader'
 
 const studyTracker = () => {
     const [userData, setUserData] = useState(() => getUserData())
+    const [originalStudyData, setOriginalStudyData] = useState(() => getUserStudyItems())
     const [studyItems, setStudyItems] = useState(() => getUserStudyItems())
     const [studySubjects, setStudySubjects] = useState(() => getSubjectInfo())
     const [dateTimes, setDateTimes] = useState(() => getDateObj())
@@ -39,7 +40,30 @@ const studyTracker = () => {
     const [activeID, setActiveId] = useState<string>(todaysObj.length > 0 ? todaysObj[0].id : "")
 
 
+    function handleFinishedAssignments(id:number, toggle:boolean) {
+        if (!toggle) {
+            const chosenObj = studyItems.filter((item) => item.assignmentID === id)
+            let notChosenObj = studyItems.filter((item) => item.assignmentID !== id)
+            notChosenObj = [...notChosenObj, chosenObj[0]]
+            setStudyItems(notChosenObj)
+            setOriginalStudyData(notChosenObj)
+        }
+        else if (toggle) {
+            const chosenObj = studyItems.filter((item) => item.assignmentID === id)
+            let notChosenObj = studyItems.filter((item) => item.assignmentID !== id)
+            notChosenObj = [chosenObj[0], ...notChosenObj]
+            setStudyItems(notChosenObj)
+            setOriginalStudyData(notChosenObj)
+        }
+    }
 
+    function handleFilterBySubject(subjectName:Subjects) {
+        // setStudyItems(originalStudyData)
+        const newObj = originalStudyData.filter((items) => items.subject == subjectName)
+        console.log(newObj)
+        setStudyItems(newObj)
+        // setStudyItems(newObj)
+    }
 
 
   return (
@@ -49,7 +73,7 @@ const studyTracker = () => {
                 <>
                     <StudyHeader />
                     
-                    <SubjectScrollView studySubjects={studySubjects}/>
+                    <SubjectScrollView studySubjects={studySubjects} filterBySubject={handleFilterBySubject}/>
 
                     <View className='h-52 ml-4'>
                         <View className='h-16 justify-center'>
@@ -110,7 +134,7 @@ const studyTracker = () => {
                             <Text className='pt-2 font-normal text-sm flex-1 line-clamp-1 w-60'>{item.assignmentDescription}</Text>
                         </View>
                         <View className='w-16 items-center justify-center'>
-                            <ToggleButton />
+                            <ToggleButton assignmentId={item.assignmentID} finishedAssignment={handleFinishedAssignments}/>
                         </View>
                     </View>
                 )
