@@ -1,6 +1,6 @@
 import { ImageSourcePropType } from "react-native"
 
-type userDataType = {
+export type userDataType = {
     name: string
     id: number
     email: string
@@ -29,6 +29,7 @@ export type studyItemsType = {
     icon: ImageSourcePropType
     isCompleted: boolean
     dateaddedObj: Date
+    dateStartedId: string
 }
 
 export function getUserData():userDataType {
@@ -48,8 +49,8 @@ const formattedDate: string = date.toLocaleDateString('en-US', {
     day: 'numeric'
     });
 
-export function getUserStudyItems() {
-    const studyItems:studyItemsType[] = [{
+export function getUserStudyItems(newStudySession?:studyItemsType) {
+    let studyItems:studyItemsType[] = [{
         assignmentName: 'Chem 3-2',
         assignmentID: 5433452535234,
         assignmentDescription: 'extremely tricky namings',
@@ -58,7 +59,8 @@ export function getUserStudyItems() {
         subject: Subjects.Physics,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
     {
         assignmentName: 'Psyche 1-1',
@@ -69,7 +71,8 @@ export function getUserStudyItems() {
         subject: Subjects.Psychology,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Gym',
@@ -80,7 +83,8 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Accounting',
@@ -91,7 +95,8 @@ export function getUserStudyItems() {
         subject: Subjects.Accounting,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Euphonium 1-9',
@@ -102,7 +107,8 @@ export function getUserStudyItems() {
         subject: Subjects.Wind_Synphony,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Piano',
@@ -113,7 +119,8 @@ export function getUserStudyItems() {
         subject: Subjects.Wind_Synphony,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Programming',
@@ -124,7 +131,8 @@ export function getUserStudyItems() {
         subject: Subjects.Programming,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Chem 1-1',
@@ -135,7 +143,8 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Chem 1-1',
@@ -146,7 +155,8 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Chem 1-1',
@@ -157,7 +167,8 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Chem 1-1',
@@ -168,7 +179,8 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Chem 1-1',
@@ -179,7 +191,8 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Chem 1-1',
@@ -190,7 +203,8 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Chem 1-1',
@@ -201,7 +215,8 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Chem 1-1',
@@ -212,7 +227,8 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },
 {
         assignmentName: 'Chem 1-1',
@@ -223,7 +239,8 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },{
         assignmentName: 'Chem 1-1',
         assignmentID: 4234234565234,
@@ -233,8 +250,15 @@ export function getUserStudyItems() {
         subject: Subjects.Chemistry,
         icon: require('../assets/icons/BookIcon.jpg'),
         isCompleted: false,
-        dateaddedObj: date
+        dateaddedObj: date,
+        dateStartedId: 'qertdhsdfgsd'
     },]
+
+    if (newStudySession) {
+        studyItems.push(newStudySession)
+        console.log(studyItems)
+        return studyItems
+    }
     return studyItems
 }
 
@@ -299,7 +323,7 @@ export function getSubjectInfo(): subjectInfoType[] {
 }
 
 
-enum Months {
+export enum Months {
     Jan = 'Jan',
     Feb = 'Feb',
     Mar = 'Mar',

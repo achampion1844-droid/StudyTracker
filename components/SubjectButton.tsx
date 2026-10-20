@@ -4,21 +4,14 @@ import Icon from './Icon'
 import { subjectInfoType, Subjects } from '../UserInfo/userInfo'
 
 type SubjectButtonProp = subjectInfoType & {
-    filterBySubject: (subjectName:Subjects) => void
+    filterBySubject: (subjectName:Subjects | null) => void
     isActive: string
     setIsActive: React.Dispatch<React.SetStateAction<string>>
 }
 const SubjectButton = ({isActive, setIsActive, icon, subjectName, numSubStudyItems, id, filterBySubject} : SubjectButtonProp) => {
-    const [isPressed, setIsPressed] = useState(false)
-
-    useEffect(() => {
-        if (isActive === id) {
-            setIsPressed(true)
-        } else if (isActive !== id) {
-            setIsPressed(false)
-        }
-    },[isActive])
-
+    const isPressed = isActive === id
+    // console.log('Active:', isActive, typeof isActive)
+    // console.log('ID:', id, typeof id)
     const THEME = {
         icon: {
             size: 38
@@ -26,9 +19,14 @@ const SubjectButton = ({isActive, setIsActive, icon, subjectName, numSubStudyIte
     }
 
     function subjectIsPressed() {
-        setIsActive(id)
-        setIsPressed(!isPressed)
-        filterBySubject(subjectName)
+        if (isActive == id) {
+            setIsActive('')
+            filterBySubject(null)
+        } else {
+            setIsActive(id)
+            filterBySubject(subjectName) 
+        }
+        
     }
 
   return (

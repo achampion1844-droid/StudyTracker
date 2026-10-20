@@ -15,7 +15,6 @@ module.exports = {
         customButtonHoverBlue: '#2690D5',
         customButtonActiveBlue: '#2781BD',
         customStudyButton: '#02BDE3',
-
       }
     },
   },

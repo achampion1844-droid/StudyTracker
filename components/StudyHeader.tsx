@@ -1,8 +1,9 @@
 import { View, Text, Pressable } from 'react-native'
 import React from 'react'
+import { Link, useRouter } from 'expo-router'
 
 const StudyHeader = () => {
-
+    const router = useRouter()
     const date = new Date()
     const formattedDate: string = date.toLocaleDateString('en-US', {
         year: 'numeric',
@@ -13,6 +14,12 @@ const StudyHeader = () => {
     function changeDate() {
         console.log('this will change the date')
     }
+
+    function addNewStudyItem() {
+        router.push('/newStudyItem')
+    }
+
+
   return (
     <View className='items-start justify-center gap-4 mt-2 ml-4 mb-8'>
         <Text className='text-md text-stone-800'>Workspace</Text>
@@ -22,6 +29,7 @@ const StudyHeader = () => {
                 <Text className='text-stone-100 font-bold'>Date: {formattedDate} ⏷</Text>
             </Pressable>
             <Pressable
+                onPress={addNewStudyItem}
                 className='mr-6 bg-customButtonBlue w-14 h-14 rounded-full items-center justify-center hover:bg-customButtonHoverBlue active:bg-customButtonActiveBlue'
             >
                 <Text className='text-gray-100 font-bold text-4xl'>+</Text>
