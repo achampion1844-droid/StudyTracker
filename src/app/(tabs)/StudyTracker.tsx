@@ -1,7 +1,7 @@
-import { View, Text, ScrollView, Button, Pressable, FlatList, Image, TouchableOpacity, InteractionManager, Dimensions } from 'react-native'
-import React, { useEffect, useRef, useState } from 'react'
+import { View, Text, ScrollView, Button, Pressable, FlatList, Image, TouchableOpacity, InteractionManager, Dimensions, Alert } from 'react-native'
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { dateObjType, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, subjectInfoType, Subjects } from '../../../UserInfo/userInfo'
+import { dateObjType, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, Months, subjectInfoType, Subjects } from '../../../UserInfo/userInfo'
 import ToggleButton from '../../../components/Button'
 import Icon from '../../../components/Icon'
 import SubjectButton from '../../../components/SubjectButton'
@@ -9,69 +9,169 @@ import DateButton from '../../../components/DateButton'
 import SubjectScrollView from '../../../components/SubjectScrollView'
 import StudyHeader from '../../../components/StudyHeader'
 
-const studyTracker = () => {
+
+
+
+export function dateIdRetriever(day:number, month:any, year:number) {
+        const id = getDateObj().filter((time) => time.date===day && time.month===month && time.year==year)
+        return id[0]
+    }
+
+
+const studyTracker = (): ReactNode => {
     const [userData, setUserData] = useState(() => getUserData())
-    const [originalStudyData, setOriginalStudyData] = useState(() => getUserStudyItems())
     const [studyItems, setStudyItems] = useState(() => getUserStudyItems())
     const [studySubjects, setStudySubjects] = useState(() => getSubjectInfo())
     const [dateTimes, setDateTimes] = useState(() => getDateObj())
-    const dateListRef = useRef(null)
-    const CENTERED_INDEX = 5
+    
     const date = new Date()
-    const formattedMonth: string = date.toLocaleDateString('en-US', {
-        month: 'short',
-        });
-
-    const formattedDate: string = date.toLocaleDateString('en-US', {
-        day: 'numeric',
-        });
-
-    const [todaysDate, setTodaysDate] = useState(Number(formattedDate))
-    const todaysObj:dateObjType[] = dateTimes.filter((obj) => obj.month === formattedMonth && obj.date ===  todaysDate)
+    const todaysDay = Number(date.toLocaleDateString('en-US', {day: 'numeric'}))
+    const todaysMonth = (date.toLocaleDateString('en-US', {month: 'short'}))
+    const todaysYear = Number(date.toLocaleDateString('en-US', {year: 'numeric'}))
 
 
-
+    const [formattedMonth, setFormattedMonth] = useState(todaysMonth)
+    const [formattedDay, setFormattedDay] = useState(todaysDay)
+    
+    //todaysObj filters all the obj in dateTimes to see which ones have the same day and
+    //month as formattedMonth and formattedDay.
+    const [todaysObj, setTodaysObj] = useState(dateTimes.filter((obj) => obj.month === formattedMonth && obj.date === formattedDay))
+    //activeID is the id of the currect date button that is filtering all the study items
+    const [activeID, setActiveId] = useState<string>(todaysObj.length > 0 ? todaysObj[0].id : '')
+    
+    const dateListRef = useRef(null)
     const THEME = {
         icon: {
             size: 50
         }
     }
 
-    const [activeID, setActiveId] = useState<string>(todaysObj.length > 0 ? todaysObj[0].id : "")
+    // resets todaysObj to filter for the new month and day
+    // handleFilterByDate then filters all of the new study topics by
+    // the id of the currect date button (activeID) and this effect goes
+    // off whenever formattedMonth and formattedDay are changed
+    useEffect(() => {
+        setTodaysObj(dateTimes.filter((obj) => obj.month === formattedMonth && obj.date === formattedDay))
+        handleFilterByDate(activeID)
+    },[formattedMonth, formattedDay])
 
 
-    function handleFinishedAssignments(id:number, toggle:boolean) {
-        if (!toggle) {
-            const chosenObj = studyItems.filter((item) => item.assignmentID === id)
-            let notChosenObj = studyItems.filter((item) => item.assignmentID !== id)
-            notChosenObj = [...notChosenObj, chosenObj[0]]
-            setStudyItems(notChosenObj)
-            setOriginalStudyData(notChosenObj)
-        }
-        else if (toggle) {
-            const chosenObj = studyItems.filter((item) => item.assignmentID === id)
-            let notChosenObj = studyItems.filter((item) => item.assignmentID !== id)
-            notChosenObj = [chosenObj[0], ...notChosenObj]
-            setStudyItems(notChosenObj)
-            setOriginalStudyData(notChosenObj)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    function formatDay(date:Date):string {
+        return date.toLocaleDateString('en-US', {
+        day: 'numeric'
+        });
+    }
+    function formatMonth(date:Date):string {
+        return date.toLocaleDateString('en-US', {
+        month: 'short'
+        });
+    }
+    function formatYear(date:Date):string {
+        return date.toLocaleDateString('en-US', {
+        year: 'numeric'
+        });
+    }
+
+
+    // function takes in two parameters the id of the assignment and if the box was 
+    // ticked (true) or unticked (false). Ths function then maps over the whole
+    // list to ensure that the assignment is updated with the new value
+    // then two lists are created finished and not finished before getting
+    // merged together and set into the Study Items list
+    function handleFinishedAssignments(id:number, isCompleted:boolean): void {
+        const updated = studyItems.map((item) => item.assignmentID === id ? {...item, isCompleted} : item)
+        if (isCompleted) {
+            const finished = updated.filter(item => item.isCompleted)
+            const notFinished = updated.filter(item => !item.isCompleted)
+            setStudyItems([...notFinished, ...finished])
+        } else {
+            const finished = updated.filter(item => item.isCompleted)
+            const notFinished = updated.filter(item => !item.isCompleted)
+            setStudyItems([...notFinished, ...finished])
         }
     }
 
-    function handleFilterBySubject(subjectName:Subjects) {
-        // setStudyItems(originalStudyData)
-        const newObj = originalStudyData.filter((items) => items.subject == subjectName)
-        console.log(newObj)
-        setStudyItems(newObj)
-        // setStudyItems(newObj)
+
+
+
+    // subjectName is passed as a prop up from the Subject button component
+    // this filter takes either the subject name or a null and filter the
+    // assignments to be studied by the category name pass or it returns
+    // the full list of assignments if null is returned. An example would be 
+    // clicking the chemistry button and then clicking it again. on the second
+    // click, a null is returned reseting the button. The list is then reorganized
+    // to ensure that all finished and unfinished study assignments are still organized
+    function handleFilterBySubject(subjectName:Subjects | null):void { 
+        if (!subjectName) {
+            setStudyItems(getUserStudyItems())
+        }
+        else {
+            setStudyItems(getUserStudyItems().filter((items) => items.subject == subjectName))
+        }
+        const finished = studyItems.filter(item => item.isCompleted)
+        const notFinished = studyItems.filter(item => !item.isCompleted)
+        setStudyItems([...notFinished, ...finished])
+    }
+
+
+
+    // eventually make the dates a list and filter by if the date.dateStartedId is in the list
+    // creates a function that takes in the id of the date button and filters
+    // all of the study items to see which ones are tied to the specific date
+    function handleFilterByDate(id:string): void {
+        const newDateFilterArray = getUserStudyItems().filter((date) => date.dateStartedId === id)
+        setStudyItems(newDateFilterArray)
+    }
+
+
+    // this function takes in a newDate Date object from the scroll wheel
+    // and then converts the newDate into a day, month, and year. If the new
+    // date is withing the time range of the IdRetriever, then the formattedDay
+    // and formattedMonth are changed while the activeId is shifted as well
+    function handleNewDate(newDate:Date) {
+        const day = Number(formatDay(newDate))
+        const month = formatMonth(newDate)
+        const year = Number(formatYear(newDate))
+        if (dateIdRetriever(day, month, year) !== undefined) {
+            setFormattedDay(day)
+            setFormattedMonth(month)
+            setActiveId(dateIdRetriever(day, month, year).id)
+        } 
+        else {
+            Alert.alert('Date to Far Back', 'The date you have selected is before your first study assignment')
+        }
     }
 
 
   return (
     <SafeAreaView className='h-full bg-customBgBlue'>
         <FlatList
-            ListHeaderComponent={() => (
+            ListHeaderComponent={
                 <>
-                    <StudyHeader />
+                    <View className='ml-4'>
+                        <Pressable>
+                            <Text>Force Reset</Text>
+                        </Pressable>
+                    </View>
+                    <StudyHeader filterNewDate={handleNewDate}/>
                     
                     <SubjectScrollView studySubjects={studySubjects} filterBySubject={handleFilterBySubject}/>
 
@@ -80,41 +180,46 @@ const studyTracker = () => {
                             <Text className=' text-3xl font-bold text-stone-900'>10 / 12 Items Studied!!!</Text>
                         </View>
 
-                        <FlatList
-                            ref={dateListRef}
-                            // snapToAlignment={'center'}
-                            initialScrollIndex={todaysDate}
-                            getItemLayout={(data, index) => ({
-                                length: 65,
-                                offset: 8 + (65 * (index - 1)),
-                                index,
-                            })}
-                            onScrollToIndexFailed={(info) => {console.log('something bad is happening')}}
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            data={dateTimes}
-                            keyExtractor={(item)=> item.id.toString()}
-                            renderItem={({item}:{item:dateObjType}) => (
-                                <>
-                                    <DateButton key={item.id} date={item.date} id={item.id} activeID={activeID} setActiveId={setActiveId}/>
-                                </>
-                                
-                            )}
-                            contentContainerStyle={{
-                                height: 128,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: 30,
-                                paddingLeft: 8,
-                                paddingRight: 16,
-                            }}
-                        />
+                        <View className='h-20 mt-6'>
+                            <FlatList
+                                className=''
+                                ref={dateListRef}
+                                initialScrollIndex={formattedDay}
+                                getItemLayout={(data, index) => ({
+                                    length: 65,
+                                    offset: 8 + (65 * (index - 1)),
+                                    index,
+                                })}
+                                // onScrollToIndexFailed={() => {dateListRef.current?.scrollToOffset({offset: 0, animated: true})}}
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                data={dateTimes}
+                                keyExtractor={(item)=> item.id.toString()}
+                                renderItem={({item}:{item:dateObjType}) => (
+                                    <>
+                                        <DateButton 
+                                            key={item.id} 
+                                            date={item.date} 
+                                            id={item.id} 
+                                            activeID={activeID} 
+                                            setActiveId={setActiveId} 
+                                            filterByDate={handleFilterByDate}/>
+                                    </>
+                                    
+                                )}
+                                contentContainerStyle={{
+                                    // height: 30,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 30,
+                                    paddingLeft: 8,
+                                    paddingRight: 16,
+                                }}
+                            />
+                        </View> 
                     </View>
-                    
-                    
                 </>
-                
-            )}
+            }
             data={studyItems}
             contentContainerStyle={{
                 paddingVertical: 8,
@@ -142,7 +247,15 @@ const studyTracker = () => {
             keyExtractor={item => item.assignmentID.toString()}
             scrollEnabled={true}
             nestedScrollEnabled={true}
+            ListFooterComponent={
+                <View className='border-2 border-black mx-2 px-2 mt-4 h-28 rounded-3xl items-center justify-center'>
+                    <Pressable className=' w-full h-full justify-center items-center'>
+                        <Text className='text-7xl bg-customStudyButton h-16 w-16 rounded-full text-center' style={{ lineHeight: 60 }}>+</Text>
+                    </Pressable>
+                </View>
+            }
         />
+        
     </SafeAreaView>
     
   )

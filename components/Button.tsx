@@ -5,8 +5,8 @@ const ToggleButton = ({assignmentId, finishedAssignment}: {assignmentId:number, 
     const [toggle, setToggle] = useState(false)
     
     function togglePressed() {
+      finishedAssignment(assignmentId, !toggle)
       setToggle(!toggle)
-      finishedAssignment(assignmentId, toggle)
     }
 
 
