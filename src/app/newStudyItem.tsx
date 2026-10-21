@@ -33,7 +33,7 @@ const newStudyItem = () => {
 
 
     function returnHome() {
-        router.push('/(tabs)/StudyTracker')
+        router.back()
     }
 
     const date = new Date()
