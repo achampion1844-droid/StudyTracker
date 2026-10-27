@@ -20,7 +20,7 @@ export type studyItemsType = {
     assignmentDescription: string
     dateAdded: string
     remainingStudySessions: number
-    subject: Subjects
+    subject: string
     icon: ImageSourcePropType
     isCompleted: boolean
     dateaddedObj: Date
@@ -54,7 +54,7 @@ export type dateObjType = {
 
 export type subjectInfoType = {
     icon: ImageSourcePropType
-    subjectName: Subjects
+    subjectName: string
     numSubStudyItems: number
     id: string
 }
@@ -91,18 +91,18 @@ export enum Months {
     Dec = 'Dec',
 }
 
-export enum Subjects {
-    Chemistry = 'Chemistry',
-    Math = 'Math',
-    English = 'English',
-    Biology = 'Biology',
-    Physics = 'Physics',
-    Programming = 'Programming',
-    History = 'History',
-    Psychology = 'Psychology',
-    Accounting = 'Accounting',
-    Wind_Synphony = 'Wind_Synphony'
-}
+// export enum Subjects {
+//     Chemistry = 'Chemistry',
+//     Math = 'Math',
+//     English = 'English',
+//     Biology = 'Biology',
+//     Physics = 'Physics',
+//     Programming = 'Programming',
+//     History = 'History',
+//     Psychology = 'Psychology',
+//     Accounting = 'Accounting',
+//     Wind_Synphony = 'Wind_Synphony'
+// }
 
 
 
@@ -125,7 +125,8 @@ export function getUserData():userDataType {
 
 
 export function isValidSubject(name:any) {
-    return Object.values(Subjects).includes(name)
+    // return Object.values(Subjects).includes(name)
+    return true
 }
 
 
@@ -193,11 +194,10 @@ export async function getSubjectInfo(): Promise<subjectInfoType[]>  {
         console.log(error)
     }
     responses.forEach((response) => {
-        const subjectName = response.subject_name.name as Subjects
-        if (isValidSubject(subjectName)) {
+        if (true) {
             studyInfoObj.push({
                 icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
-                subjectName: subjectName,
+                subjectName: response.subject_name.name,
                 numSubStudyItems: Number(response.num_sub_study_items),
                 id: response.id,
             })
@@ -211,24 +211,21 @@ export async function getSubjectInfo(): Promise<subjectInfoType[]>  {
 export async function getUserStudyItems(newStudySession?:studyItemsType): Promise<studyItemsType[]> {
     let userStudyObjNew:studyItemsType[] = []
     try {
-        const response = await axios.get('http://127.0.0.1:8000/api/Assignment/')
+        const response = await axios.get('http://172.26.68.239:8000/api/Assignment/')
         const responses:studyItemsAPICallType[] = response.data
         responses.map((response) => {
-            const subjectName = response.subject.name as Subjects
-            if (isValidSubject(subjectName)) {
                 userStudyObjNew?.push({
                 assignmentName: response.assignment_name,
                 assignmentID: String(response.assignment_ID),
                 assignmentDescription: response.assignment_description,
                 dateAdded: (response.date_started),
                 remainingStudySessions: Number(response.remaining_study_sessions),
-                subject: subjectName,
+                subject: response.subject.name,
                 icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
                 isCompleted: Boolean(response.is_Completed),
                 dateaddedObj: new Date(response.date_started),
                 dateStartedId: String(response.date_started),
-                })
-            }
+            })
         })
     } catch (error) {
         console.log('error')

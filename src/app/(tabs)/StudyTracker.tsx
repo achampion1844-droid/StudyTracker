@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, Button, Pressable, FlatList, Image, TouchableOpacity, Dimensions, Alert, Modal, TextInput } from 'react-native'
 import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { dateObjType, getDateObj, getNewDateObj, getSubjectApiInfo, getSubjectInfo, getUserData, getUserStudyItems, Months, studyItemsType, subjectInfoType, Subjects } from '../../../UserInfo/userInfo'
+import { dateObjType, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, Months, studyItemsType, subjectInfoType } from '../../../UserInfo/userInfo'
 import ToggleButton from '../../../components/Button'
 import Icon from '../../../components/Icon'
 import SubjectButton from '../../../components/SubjectButton'
@@ -146,7 +146,7 @@ const studyTracker = (): ReactNode => {
     // clicking the chemistry button and then clicking it again. on the second
     // click, a null is returned reseting the button. The list is then reorganized
     // to ensure that all finished and unfinished study assignments are still organized
-    async function handleFilterBySubject(subjectName:Subjects | null):Promise<void> { //added an async and a Promise<void>
+    async function handleFilterBySubject(subjectName:string | null):Promise<void> { //added an async and a Promise<void>
         let dummyStudyItems
         if (!subjectName) {
             const data = await getUserStudyItems()

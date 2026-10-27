@@ -2,9 +2,9 @@ import { View, Text, Pressable } from 'react-native'
 import React, { DO_NOT_USE_OR_YOU_WILL_BE_FIRED_EXPERIMENTAL_KEY_TYPES, useState } from 'react'
 import { ScrollView } from 'react-native'
 import SubjectButton from './SubjectButton'
-import { studyItemsType, subjectInfoType, Subjects } from '../UserInfo/userInfo'
+import { studyItemsType, subjectInfoType} from '../UserInfo/userInfo'
 
-const SubjectScrollView = ({studySubjects, filterBySubject, isVisible, setIsVisible}: {studySubjects: subjectInfoType[], filterBySubject: (subjectName:Subjects | null) => void, isVisible: boolean, setIsVisible: (bool:boolean) => void}) => {
+const SubjectScrollView = ({studySubjects, filterBySubject, isVisible, setIsVisible}: {studySubjects: subjectInfoType[], filterBySubject: (subjectName:string | null) => void, isVisible: boolean, setIsVisible: (bool:boolean) => void}) => {
   const [isActive, setIsActive] = useState('')
   function addNewSubject() {
     setIsVisible(true)

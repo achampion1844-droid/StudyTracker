@@ -1,7 +1,7 @@
 import { View, Text, TextInput, Pressable } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import { dateObjType, getUserStudyItems, Months, studyItemsType, Subjects } from '../../UserInfo/userInfo'
+import { dateObjType, getUserStudyItems, Months, studyItemsType } from '../../UserInfo/userInfo'
 import { useRouter } from 'expo-router'
 import { Selector } from 'rn-selector';
 import { dateIdRetriever } from './(tabs)/StudyTracker'
@@ -10,19 +10,35 @@ const newStudyItem = () => {
     const [newStudyItem, setNewStudyItem] = useState<studyItemsType | null>(null)
     const [assignmentName, setAssignmentName] = useState<string>('')
     const [assignmentDescription, setAssignmentDescription] = useState<string>('')
-    const [subject, setSubject] = useState<Subjects | null>(null)
+    const [subject, setSubject] = useState<string | null>(null)
     const router = useRouter()
     const [response, setResponse] = useState<dateObjType | null>(null)
     type StudySubjectsObjType = {
         label:string,
         value:string,
     }
+    
+    
+    // this is a patch job and needs to be fixed by calling an api and getting the names of the different Subjects
+    const Subjects = [{
+        subjectName: 'Chemistry'
+    },
+    {
+        subjectName: 'Biology'
+    },
+    {
+        subjectName: 'Physics'
+    },]
+
+
+
+
     let StudySubjectOptions:StudySubjectsObjType[] = []
     for (const subjectName in Subjects) {
         StudySubjectOptions.push({label: subjectName, value: subjectName})
     }
     useEffect(() => {
-        setSubject(StudySubjectOptions[0].value as Subjects)
+        setSubject(StudySubjectOptions[0].value)
     },[])
 
     function getRandomInt(min: number, max: number): number {
@@ -116,7 +132,7 @@ const newStudyItem = () => {
             <Selector 
                 options={StudySubjectOptions}
                 selectedValue={subject}
-                onValueChange={(value) => setSubject(value as Subjects)}
+                onValueChange={(value) => setSubject(value)}
                 placeholder='Select your subject'
                 // styles={{ borderColor: '#007bff', borderWidth: 1 }}
                 //     dropdownStyle={{ backgroundColor: '#f8f9fa' }}
