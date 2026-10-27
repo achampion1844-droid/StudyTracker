@@ -1,10 +1,10 @@
 import { View, Text, TouchableOpacity, Pressable } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Icon from './Icon'
-import { subjectInfoType, Subjects } from '../UserInfo/userInfo'
+import { subjectInfoType } from '../UserInfo/userInfo'
 
 type SubjectButtonProp = subjectInfoType & {
-    filterBySubject: (subjectName:Subjects | null) => void
+    filterBySubject: (subjectName:string | null) => void
     isActive: string
     setIsActive: React.Dispatch<React.SetStateAction<string>>
 }
