@@ -1,13 +1,15 @@
-import { View, Text, ScrollView, Button, Pressable, FlatList, Image, TouchableOpacity, InteractionManager, Dimensions, Alert } from 'react-native'
+import { View, Text, ScrollView, Button, Pressable, FlatList, Image, TouchableOpacity, Dimensions, Alert, Modal, TextInput } from 'react-native'
 import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { dateObjType, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, Months, subjectInfoType, Subjects } from '../../../UserInfo/userInfo'
+import { dateObjType, getDateObj, getNewDateObj, getSubjectApiInfo, getSubjectInfo, getUserData, getUserStudyItems, Months, studyItemsType, subjectInfoType, Subjects } from '../../../UserInfo/userInfo'
 import ToggleButton from '../../../components/Button'
 import Icon from '../../../components/Icon'
 import SubjectButton from '../../../components/SubjectButton'
 import DateButton from '../../../components/DateButton'
 import SubjectScrollView from '../../../components/SubjectScrollView'
 import StudyHeader from '../../../components/StudyHeader'
+import { useRouter } from 'expo-router'
+import axios from 'axios'
 
 
 
@@ -19,9 +21,13 @@ export function dateIdRetriever(day:number, month:any, year:number) {
 
 
 const studyTracker = (): ReactNode => {
+
+    const [newDataBaseStudyItems, setNewDataBaseStudyItems] = useState<studyItemsType[]>([])
+    
+
     const [userData, setUserData] = useState(() => getUserData())
-    const [studyItems, setStudyItems] = useState(() => getUserStudyItems())
-    const [studySubjects, setStudySubjects] = useState(() => getSubjectInfo())
+    const [studyItems, setStudyItems] = useState<studyItemsType[]>([]) //changed
+    const [studySubjects, setStudySubjects] = useState<subjectInfoType[]>([])
     const [dateTimes, setDateTimes] = useState(() => getDateObj())
     
     const date = new Date()
@@ -32,13 +38,17 @@ const studyTracker = (): ReactNode => {
 
     const [formattedMonth, setFormattedMonth] = useState(todaysMonth)
     const [formattedDay, setFormattedDay] = useState(todaysDay)
+    //modal boolean for setting a new Subjuft
+    const [isVisible, setIsVisible] = useState(false)
+    // variable for the new subject name
+    const [newSubjectName, setNewSubjectName] = useState('')
     
     //todaysObj filters all the obj in dateTimes to see which ones have the same day and
     //month as formattedMonth and formattedDay.
     const [todaysObj, setTodaysObj] = useState(dateTimes.filter((obj) => obj.month === formattedMonth && obj.date === formattedDay))
     //activeID is the id of the currect date button that is filtering all the study items
     const [activeID, setActiveId] = useState<string>(todaysObj.length > 0 ? todaysObj[0].id : '')
-    
+    const router = useRouter()
     const dateListRef = useRef(null)
     const THEME = {
         icon: {
@@ -60,8 +70,25 @@ const studyTracker = (): ReactNode => {
 
 
 
+    useEffect(() => {
+        async function loadFromAPI() {
+            const value = await getUserStudyItems() //changed
+            const newValue = await getSubjectInfo()
+            console.log(newValue)
+            setStudyItems(value!) //changed
+            setStudySubjects(newValue)
+        }
+        loadFromAPI()
+    },[])
 
 
+
+    // console.log('hi')
+    // console.log(newDataBaseStudyItems)
+    // getSubjectApiInfo()
+
+    
+    
 
 
 
@@ -97,7 +124,7 @@ const studyTracker = (): ReactNode => {
     // then two lists are created finished and not finished before getting
     // merged together and set into the Study Items list
     function handleFinishedAssignments(id:number, isCompleted:boolean): void {
-        const updated = studyItems.map((item) => item.assignmentID === id ? {...item, isCompleted} : item)
+        const updated = studyItems.map((item) => item.assignmentID === String(id) ? {...item, isCompleted} : item) // this might be faulty the String typecast
         if (isCompleted) {
             const finished = updated.filter(item => item.isCompleted)
             const notFinished = updated.filter(item => !item.isCompleted)
@@ -119,15 +146,18 @@ const studyTracker = (): ReactNode => {
     // clicking the chemistry button and then clicking it again. on the second
     // click, a null is returned reseting the button. The list is then reorganized
     // to ensure that all finished and unfinished study assignments are still organized
-    function handleFilterBySubject(subjectName:Subjects | null):void { 
+    async function handleFilterBySubject(subjectName:Subjects | null):Promise<void> { //added an async and a Promise<void>
+        let dummyStudyItems
         if (!subjectName) {
-            setStudyItems(getUserStudyItems())
+            const data = await getUserStudyItems()
+            dummyStudyItems = data
         }
         else {
-            setStudyItems(getUserStudyItems().filter((items) => items.subject == subjectName))
+            const data = await getUserStudyItems() //changed
+            dummyStudyItems = data.filter((items) => items.subject == subjectName)
         }
-        const finished = studyItems.filter(item => item.isCompleted)
-        const notFinished = studyItems.filter(item => !item.isCompleted)
+        const finished = dummyStudyItems.filter(item => item.isCompleted)
+        const notFinished = dummyStudyItems.filter(item => !item.isCompleted)
         setStudyItems([...notFinished, ...finished])
     }
 
@@ -136,8 +166,9 @@ const studyTracker = (): ReactNode => {
     // eventually make the dates a list and filter by if the date.dateStartedId is in the list
     // creates a function that takes in the id of the date button and filters
     // all of the study items to see which ones are tied to the specific date
-    function handleFilterByDate(id:string): void {
-        const newDateFilterArray = getUserStudyItems().filter((date) => date.dateStartedId === id)
+    async function handleFilterByDate(id:string): Promise<void> {
+        const data = await getUserStudyItems()
+        const newDateFilterArray = data.filter((date) => date.dateStartedId === id)
         setStudyItems(newDateFilterArray)
     }
 
@@ -160,6 +191,14 @@ const studyTracker = (): ReactNode => {
         }
     }
 
+    // when the new subject is added to the list
+    // this function triggers
+    function newSubjectSubmitButtonPressed() {
+        setIsVisible(false)
+        console.log(newSubjectName)
+        setNewSubjectName('')
+    }
+
 
   return (
     <SafeAreaView className='h-full bg-customBgBlue'>
@@ -172,8 +211,46 @@ const studyTracker = (): ReactNode => {
                         </Pressable>
                     </View>
                     <StudyHeader filterNewDate={handleNewDate}/>
+
+                    <Modal 
+                        visible={isVisible} 
+                        onRequestClose={() => setIsVisible(!isVisible)}
+                        // transparent={true}
+                    >
+                        <View className='w-full justify-center h-2/5'>
+                            <View className='justify-center items-end mx-4'>
+                                <TouchableOpacity 
+                                    className='border-2 border-black h-12 w-12 justify-center items-center rounded-full'
+                                    onPress={() => setIsVisible(!isVisible)}>
+                                    <Text className='font-bold text-xl'>X</Text>
+                                </TouchableOpacity>
+                            </View>
+                            
+                            <View className='mt-6 items-center mx-4'>
+                                <TextInput 
+                                    onChangeText={setNewSubjectName}
+                                    value={newSubjectName}
+                                    className='border-2 border-black h-16 text-2xl w-full placeholder:text-gray-600 mx-4'
+                                    placeholder='New Subject Name'
+                                />
+                                <Pressable 
+                                    className='bg-customButtonBlue w-full mx-4 h-12 rounded-lg mt-2 flex justify-center items-center active:bg-customButtonActiveBlue'
+                                    onPress={newSubjectSubmitButtonPressed}
+                                    >
+                                    <Text className='text-gray-50 text-2xl pl-2'>Submit</Text>
+                                </Pressable>
+                            </View>
+                            
+                        </View>
+                    </Modal>
                     
-                    <SubjectScrollView studySubjects={studySubjects} filterBySubject={handleFilterBySubject}/>
+                    
+                    <SubjectScrollView 
+                        studySubjects={studySubjects} 
+                        filterBySubject={handleFilterBySubject}
+                        isVisible={isVisible}
+                        setIsVisible={setIsVisible}
+                    />
 
                     <View className='h-52 ml-4'>
                         <View className='h-16 justify-center'>
@@ -239,7 +316,7 @@ const studyTracker = (): ReactNode => {
                             <Text className='pt-2 font-normal text-sm flex-1 line-clamp-1 w-60'>{item.assignmentDescription}</Text>
                         </View>
                         <View className='w-16 items-center justify-center'>
-                            <ToggleButton assignmentId={item.assignmentID} finishedAssignment={handleFinishedAssignments}/>
+                            <ToggleButton assignmentId={Number(item.assignmentID)} finishedAssignment={handleFinishedAssignments}/> 
                         </View>
                     </View>
                 )
@@ -249,7 +326,10 @@ const studyTracker = (): ReactNode => {
             nestedScrollEnabled={true}
             ListFooterComponent={
                 <View className='border-2 border-black mx-2 px-2 mt-4 h-28 rounded-3xl items-center justify-center'>
-                    <Pressable className=' w-full h-full justify-center items-center'>
+                    <Pressable 
+                        className=' w-full h-full justify-center items-center'
+                        onPress={() => {router.push('/newStudyItem')}}
+                        >
                         <Text className='text-7xl bg-customStudyButton h-16 w-16 rounded-full text-center' style={{ lineHeight: 60 }}>+</Text>
                     </Pressable>
                 </View>
@@ -260,5 +340,5 @@ const studyTracker = (): ReactNode => {
     
   )
 }
-
+//* this might be faulty the Number typecast on line 296 with the toggle button <ToggleButton assignmentId={Number(item.assignmentID)} finishedAssignment={handleFinishedAssignments}/> 
 export default studyTracker

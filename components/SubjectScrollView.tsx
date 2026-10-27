@@ -1,11 +1,14 @@
 import { View, Text, Pressable } from 'react-native'
-import React, { useState } from 'react'
+import React, { DO_NOT_USE_OR_YOU_WILL_BE_FIRED_EXPERIMENTAL_KEY_TYPES, useState } from 'react'
 import { ScrollView } from 'react-native'
 import SubjectButton from './SubjectButton'
 import { studyItemsType, subjectInfoType, Subjects } from '../UserInfo/userInfo'
 
-const SubjectScrollView = ({studySubjects, filterBySubject}: {studySubjects: subjectInfoType[], filterBySubject: (subjectName:Subjects | null) => void}) => {
+const SubjectScrollView = ({studySubjects, filterBySubject, isVisible, setIsVisible}: {studySubjects: subjectInfoType[], filterBySubject: (subjectName:Subjects | null) => void, isVisible: boolean, setIsVisible: (bool:boolean) => void}) => {
   const [isActive, setIsActive] = useState('')
+  function addNewSubject() {
+    setIsVisible(true)
+  }
   return (
     <ScrollView 
         horizontal 
@@ -25,7 +28,10 @@ const SubjectScrollView = ({studySubjects, filterBySubject}: {studySubjects: sub
                       filterBySubject={filterBySubject}/>
                 ))}
                 <View className='h-20 w-44 rounded-2xl bg-white items-center justify-center'>
-                  <Pressable className='h-full w-full justify-center items-center'>
+                  <Pressable 
+                    className='h-full w-full justify-center items-center'
+                    onPress={addNewSubject}
+                  >
                     <View className='items-center justify-center h-14 w-14  rounded-full'>
                       <Text className='text-black text-6xl'>+</Text>
                     </View>
