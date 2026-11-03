@@ -7,6 +7,7 @@ const DateButton = ({date, id, activeID, setActiveId, filterByDate}: {date:numbe
     setActiveId(id)
     filterByDate(id)
   }
+  // creates the date button that someone can press
     
   return (
       <Pressable onPress={dateButtonPress}>

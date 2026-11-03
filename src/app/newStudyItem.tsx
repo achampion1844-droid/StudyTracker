@@ -1,7 +1,7 @@
 import { View, Text, TextInput, Pressable } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import { dateObjType, getUserStudyItems, Months, studyItemsType } from '../../UserInfo/userInfo'
+import { dateObjType, getSubjectList, getUserStudyItems, Months, studyItemsType, SubjectName } from '../../UserInfo/userInfo'
 import { useRouter } from 'expo-router'
 import { Selector } from 'rn-selector';
 import { dateIdRetriever } from './(tabs)/StudyTracker'
@@ -13,28 +13,29 @@ const newStudyItem = () => {
     const [subject, setSubject] = useState<string | null>(null)
     const router = useRouter()
     const [response, setResponse] = useState<dateObjType | null>(null)
+    const [Subjects, setSubjects] = useState<string[]>(['Chemistry','Biology', 'Physics', 'Wind_Symphony'])
     type StudySubjectsObjType = {
         label:string,
         value:string,
     }
+
+    useEffect(() => {
+        let isMounted = true
+        async function getSubjectsAPI() {
+            if (isMounted) {
+                const subjectValue = await getSubjectList()
+                setSubjects(subjectValue.map((name) => name.name))
+            }
+        }
+        getSubjectsAPI()
+        return () => {
+            isMounted = false
+        }
+    }, [Subjects])
     
-    
-    // this is a patch job and needs to be fixed by calling an api and getting the names of the different Subjects
-    const Subjects = [{
-        subjectName: 'Chemistry'
-    },
-    {
-        subjectName: 'Biology'
-    },
-    {
-        subjectName: 'Physics'
-    },]
-
-
-
 
     let StudySubjectOptions:StudySubjectsObjType[] = []
-    for (const subjectName in Subjects) {
+    for (const subjectName of Subjects) {
         StudySubjectOptions.push({label: subjectName, value: subjectName})
     }
     useEffect(() => {
@@ -73,8 +74,6 @@ const newStudyItem = () => {
         });
 
         setResponse(dateIdRetriever(Number(IDDay), IDMonth, Number(IDYear)) as dateObjType)
-        console.log('This is the response')
-        console.log(response)
     },[])
 
 
@@ -89,7 +88,7 @@ const newStudyItem = () => {
         }
         const newAssignmentObj:studyItemsType = {
             assignmentName: assignmentName,
-            assignmentID: getRandomInt(10000000000,10000000000000),
+            assignmentID: String(getRandomInt(10000000000,10000000000000)),
             assignmentDescription: assignmentDescription,
             dateAdded: formattedDate,
             remainingStudySessions: 5,

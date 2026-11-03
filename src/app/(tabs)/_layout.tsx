@@ -33,6 +33,11 @@ export default function TabLayout() {
                 tabBarIcon: ({color, size}) => <Ionicons name='cog-outline' color={color} size={size}/>,
                 tabBarLabel: 'Settings'
             }} />
+            <Tabs.Screen name='graphics' options={{
+                headerShown: false,
+                tabBarIcon: ({color, size}) => <Ionicons name='airplane' color={color} size={size} />,
+                tabBarLabel: 'Graphics'
+            }} />
         </Tabs>
     )
 }

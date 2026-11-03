@@ -1,9 +1,10 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 
-const ToggleButton = ({assignmentId, finishedAssignment}: {assignmentId:number, finishedAssignment: (assignmentId:number, toggle:boolean) => void}) => {
+const ToggleButton = ({assignmentId, finishedAssignment}: {assignmentId:string, finishedAssignment: (assignmentId:string, toggle:boolean) => void}) => {
     const [toggle, setToggle] = useState(false)
-    
+    // creates a toggleable button on each assigment block that when pressed
+    // changed from white to black to indicate completion of the assignment
     function togglePressed() {
       finishedAssignment(assignmentId, !toggle)
       setToggle(!toggle)

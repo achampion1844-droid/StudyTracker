@@ -1,1 +1,2 @@
-why does the subjects button compontent rerender whenever the date buttons rerenders
+how to add a bluring effect on the adding new subjects popup
+why does md: crash the program
