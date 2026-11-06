@@ -1,44 +1,34 @@
 import { View, Text, ScrollView, Button, Pressable, FlatList, Image, TouchableOpacity, Dimensions, Alert, Modal, TextInput } from 'react-native'
-import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { act, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { dateObjType, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, Months, studyItemsType, subjectInfoType } from '../../../UserInfo/userInfo'
+import { addNewAssignment, dateObjType, getAllEarliestDateObj, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, Months, studyItemsType, subjectInfoType, TokenPackageType, userDataType } from '../../../UserInfo/userInfo'
+import {getToken, getUserAcessOrRefreshToken, refreshingToken, removeTokens, saveTokens, validateToken} from '../../../UserInfo/userAuth'
 import ToggleButton from '../../../components/Button'
 import Icon from '../../../components/Icon'
 import SubjectButton from '../../../components/SubjectButton'
 import DateButton from '../../../components/DateButton'
 import SubjectScrollView from '../../../components/SubjectScrollView'
 import StudyHeader from '../../../components/StudyHeader'
-import { useRouter } from 'expo-router'
-import axios from 'axios'
+import { Redirect, useRouter } from 'expo-router'
+import { formatDay, formatNumMonth, formatYear } from '../../../functions/DateModifiers'
 
-
-
-
-export function dateIdRetriever(day:number, month:any, year:number) {
-        const id = getDateObj().filter((time) => time.date===day && time.month===month && time.year==year)
-        return id[0]
-    }
 
 
 const studyTracker = (): ReactNode => {
-
-    const [newDataBaseStudyItems, setNewDataBaseStudyItems] = useState<studyItemsType[]>([])
-    
-
-    const [userData, setUserData] = useState(() => getUserData())
+    const [userData, setUserData] = useState<userDataType>({name: '', id: '', email: ''})
     const [studyItems, setStudyItems] = useState<studyItemsType[]>([]) //changed
     const [studySubjects, setStudySubjects] = useState<subjectInfoType[]>([])
     const [dateTimes, setDateTimes] = useState(() => getDateObj())
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true)
+    const [isSigningUp, setIsSigningUp] = useState<boolean>(false)
     
     const date = new Date()
     const todaysDay = Number(date.toLocaleDateString('en-US', {day: 'numeric'}))
     const todaysMonth = (date.toLocaleDateString('en-US', {month: 'short'}))
-    const todaysYear = Number(date.toLocaleDateString('en-US', {year: 'numeric'}))
-
-
+    
     const [formattedMonth, setFormattedMonth] = useState(todaysMonth)
     const [formattedDay, setFormattedDay] = useState(todaysDay)
-    //modal boolean for setting a new Subjuft
+    //modal boolean for setting a new Subject
     const [isVisible, setIsVisible] = useState(false)
     // variable for the new subject name
     const [newSubjectName, setNewSubjectName] = useState('')
@@ -48,6 +38,12 @@ const studyTracker = (): ReactNode => {
     const [todaysObj, setTodaysObj] = useState(dateTimes.filter((obj) => obj.month === formattedMonth && obj.date === formattedDay))
     //activeID is the id of the currect date button that is filtering all the study items
     const [activeID, setActiveId] = useState<string>(todaysObj.length > 0 ? todaysObj[0].id : '')
+
+    const [loginUsername, setLoginUsername] = useState<string>('superman')
+    const [loginEmail, setLoginEmail] = useState<string>('superman@gmail.com')
+    const [loginPassword, setLoginPassword] = useState<string>('1!qQ1!qQ')
+    const [loginErrorMessage, setLoginErrorMessage] = useState<String>('')
+
     const router = useRouter()
     const dateListRef = useRef(null)
     const THEME = {
@@ -65,35 +61,120 @@ const studyTracker = (): ReactNode => {
         handleFilterByDate(activeID)
     },[formattedMonth, formattedDay])
 
-
-
-
+    // loads the api's at the opening of the application and sets the state
+    useEffect(() => {
+        async function loadFromAPI() {
+            if (isLoggedIn) {
+                const userData = await getUserData()
+                if (userData) {
+                    setUserData(userData)
+                }
+                // const studyValue = await handleFilterByDate(activeID) 
+                const studyValue = await reStudyDateFilter()
+                if (studyValue) {
+                    setStudyItems(studyValue)
+                }
+                const subjectValue = await getSubjectInfo()
+                if (subjectValue) {
+                    setStudySubjects(subjectValue)
+                }
+            }
+        }
+        loadFromAPI()
+    },[isLoggedIn])
 
 
     useEffect(() => {
-        async function loadFromAPI() {
-            const value = await getUserStudyItems() //changed
-            const newValue = await getSubjectInfo()
-            console.log(newValue)
-            setStudyItems(value!) //changed
-            setStudySubjects(newValue)
+        async function hasTokenOrRedirect() {
+            const response:any = await getToken()
+            if (response !== null && Object.keys(response).length > 0) {
+                const validate = await validateToken(response['accessToken'])
+                if (validate) {
+                    setIsLoggedIn(true)
+                }
+                else {
+                    setIsLoggedIn(false)
+                }
+            } else {
+                setIsLoggedIn(false)
+            }
         }
-        loadFromAPI()
+        hasTokenOrRedirect()
+        
     },[])
-
-
-
-    // console.log('hi')
-    // console.log(newDataBaseStudyItems)
-    // getSubjectApiInfo()
-
-    
     
 
+    
+    async function testingFunction() {
+        console.log('IS WORKING')
+        // console.log(await getUserData())
+        // getUserAcessOrRefreshToken()
+        // removeTokens()
+        // const response = await getToken()
+        // console.log(response)
+        // console.log('tested')
+        // const refreshToken:any = await getToken()
+        // console.log(refreshToken)
+        // console.log('high', await refreshingToken(refreshToken['refreshToken']))
+        // await getAllEarliestDateObj()
+        // console.log(activeID)
+        // addNewAssignment()
+        reStudyDateFilter()
+        
+        
+        
+        
+        
+    }
+
+    async function reStudyDateFilter(date?:string) {
+        const allStudyItems = await getUserStudyItems()
+        let presentFilteredStudyItems
+        let fullFilteresStudyItems
+        // if (date) {
+            if (allStudyItems) {
+            const futureFilteredStudyItems = allStudyItems.filter(item => {
+                for (let i in item) {
+                    if (i=='extraDates') {
+                        for (let j in item[i]) {
+                            if (item[i][j][0]===activeID) {
+                                return true
+                            }
+                        }
+                    }
+                }
+            })
+            presentFilteredStudyItems = allStudyItems.filter(item => item.dateAdded===activeID) 
+            fullFilteresStudyItems = [...presentFilteredStudyItems, ...futureFilteredStudyItems]
+        // }
+        
+
+
+            
+            // console.log('presentFilteredStudyItems', presentFilteredStudyItems)
+            
+        // setStudyItems(fullFilteresStudyItems)
+        return fullFilteresStudyItems
+        }
+    }
 
 
 
+    async function LogIn() {
+        const response:any = await getUserAcessOrRefreshToken(loginUsername, loginEmail, loginPassword)
+        const accessToken:string = response['accessToken']
+        if (accessToken) {
+            setIsLoggedIn(true)
+        } else {
+            setLoginErrorMessage(response.response.data['non_field_errors'][0])
+        }
+    }
 
+
+    function SignUp() {
+        setIsSigningUp(true)
+        router.push('/SignUp')
+    }
 
 
 
@@ -101,21 +182,6 @@ const studyTracker = (): ReactNode => {
 
 
     
-    function formatDay(date:Date):string {
-        return date.toLocaleDateString('en-US', {
-        day: 'numeric'
-        });
-    }
-    function formatMonth(date:Date):string {
-        return date.toLocaleDateString('en-US', {
-        month: 'short'
-        });
-    }
-    function formatYear(date:Date):string {
-        return date.toLocaleDateString('en-US', {
-        year: 'numeric'
-        });
-    }
 
 
     // function takes in two parameters the id of the assignment and if the box was 
@@ -123,17 +189,11 @@ const studyTracker = (): ReactNode => {
     // list to ensure that the assignment is updated with the new value
     // then two lists are created finished and not finished before getting
     // merged together and set into the Study Items list
-    function handleFinishedAssignments(id:number, isCompleted:boolean): void {
+    function handleFinishedAssignments(id:string, isCompleted:boolean): void {
         const updated = studyItems.map((item) => item.assignmentID === String(id) ? {...item, isCompleted} : item) // this might be faulty the String typecast
-        if (isCompleted) {
-            const finished = updated.filter(item => item.isCompleted)
-            const notFinished = updated.filter(item => !item.isCompleted)
-            setStudyItems([...notFinished, ...finished])
-        } else {
-            const finished = updated.filter(item => item.isCompleted)
-            const notFinished = updated.filter(item => !item.isCompleted)
-            setStudyItems([...notFinished, ...finished])
-        }
+        const finished = updated.filter(item => item.isCompleted)
+        const notFinished = updated.filter(item => !item.isCompleted)
+        setStudyItems([...notFinished, ...finished])
     }
 
 
@@ -148,17 +208,23 @@ const studyTracker = (): ReactNode => {
     // to ensure that all finished and unfinished study assignments are still organized
     async function handleFilterBySubject(subjectName:string | null):Promise<void> { //added an async and a Promise<void>
         let dummyStudyItems
-        if (!subjectName) {
-            const data = await getUserStudyItems()
-            dummyStudyItems = data
+        const data = await reStudyDateFilter()
+        console.log(data)
+        if (data) {
+            if (!subjectName) {
+                // see if you can add an extra layer to the getUserStudyItems() function where if you click it and you have already loaded everything, it gets a parameter that tells it you've already have the data and returns the data instantly through and if () block
+                dummyStudyItems = data
+            }
+            else {
+                dummyStudyItems = data.filter((items) => items.subject == subjectName)
+            }
+            const finished = dummyStudyItems.filter(item => item.isCompleted)
+            const notFinished = dummyStudyItems.filter(item => !item.isCompleted)
+            console.log(finished)
+            console.log(notFinished)
+
+            setStudyItems([...notFinished, ...finished])
         }
-        else {
-            const data = await getUserStudyItems() //changed
-            dummyStudyItems = data.filter((items) => items.subject == subjectName)
-        }
-        const finished = dummyStudyItems.filter(item => item.isCompleted)
-        const notFinished = dummyStudyItems.filter(item => !item.isCompleted)
-        setStudyItems([...notFinished, ...finished])
     }
 
 
@@ -166,27 +232,44 @@ const studyTracker = (): ReactNode => {
     // eventually make the dates a list and filter by if the date.dateStartedId is in the list
     // creates a function that takes in the id of the date button and filters
     // all of the study items to see which ones are tied to the specific date
-    async function handleFilterByDate(id:string): Promise<void> {
-        const data = await getUserStudyItems()
-        const newDateFilterArray = data.filter((date) => date.dateStartedId === id)
-        setStudyItems(newDateFilterArray)
+    async function handleFilterByDate(id:string): Promise<studyItemsType[] | void> {
+        const data = await reStudyDateFilter()
+        if (data) {
+            const newDateFilterArray = data
+            setStudyItems(newDateFilterArray)
+            return newDateFilterArray
+        }
+        
     }
 
 
     // this function takes in a newDate Date object from the scroll wheel
     // and then converts the newDate into a day, month, and year. If the new
-    // date is withing the time range of the IdRetriever, then the formattedDay
+    // date is within the time range of the IdRetriever, then the formattedDay
     // and formattedMonth are changed while the activeId is shifted as well
-    function handleNewDate(newDate:Date) {
-        const day = Number(formatDay(newDate))
-        const month = formatMonth(newDate)
-        const year = Number(formatYear(newDate))
-        if (dateIdRetriever(day, month, year) !== undefined) {
-            setFormattedDay(day)
-            setFormattedMonth(month)
-            setActiveId(dateIdRetriever(day, month, year).id)
-        } 
-        else {
+    async function handleNewDate(newDate:Date) {
+        const day = (formatDay(newDate))
+        const month = (formatNumMonth(newDate))
+        const year = (formatYear(newDate))
+        const dateID = `${year}-${month}-${day.padStart(2,'0')}`
+        const response:false | studyItemsType = await getAllEarliestDateObj()
+        let isAfterFirstAssignment
+        if (response) {
+            isAfterFirstAssignment = new Date(response['dateAdded']).toISOString() <= new Date(dateID).toISOString()
+        }
+        if (isAfterFirstAssignment) {
+            setActiveId(() => dateID)
+            if (isLoggedIn) {
+                const studyData = await reStudyDateFilter(dateID)
+                if (studyData) {
+                    const dateFilteredStudyData = studyData
+                    console.log(dateFilteredStudyData)
+                    console.log('filtering')
+                    setStudyItems(dateFilteredStudyData)
+                }
+               
+            }
+        } else {
             Alert.alert('Date to Far Back', 'The date you have selected is before your first study assignment')
         }
     }
@@ -195,7 +278,6 @@ const studyTracker = (): ReactNode => {
     // this function triggers
     function newSubjectSubmitButtonPressed() {
         setIsVisible(false)
-        console.log(newSubjectName)
         setNewSubjectName('')
     }
 
@@ -205,19 +287,29 @@ const studyTracker = (): ReactNode => {
         <FlatList
             ListHeaderComponent={
                 <>
-                    <View className='ml-4'>
-                        <Pressable>
-                            <Text>Force Reset</Text>
-                        </Pressable>
-                    </View>
-                    <StudyHeader filterNewDate={handleNewDate}/>
+
+
+
+                    <Pressable className='ml-3 h-6 w-10 border-black border-2 active:bg-black' onPress={testingFunction}>
+                        <View >
+                            <Text>
+                                ++++++++
+                            </Text>
+                        </View>
+                    </Pressable>
+
+                    <StudyHeader filterNewDate={handleNewDate} name={userData.name}/>
+
+
+
+
 
                     <Modal 
                         visible={isVisible} 
                         onRequestClose={() => setIsVisible(!isVisible)}
                         // transparent={true}
                     >
-                        <View className='w-full justify-center h-2/5'>
+                        <View className='w-full justify-center h-2/5 md:w-40'>
                             <View className='justify-center items-end mx-4'>
                                 <TouchableOpacity 
                                     className='border-2 border-black h-12 w-12 justify-center items-center rounded-full'
@@ -240,11 +332,13 @@ const studyTracker = (): ReactNode => {
                                     <Text className='text-gray-50 text-2xl pl-2'>Submit</Text>
                                 </Pressable>
                             </View>
-                            
                         </View>
                     </Modal>
-                    
-                    
+
+
+
+
+
                     <SubjectScrollView 
                         studySubjects={studySubjects} 
                         filterBySubject={handleFilterBySubject}
@@ -252,22 +346,67 @@ const studyTracker = (): ReactNode => {
                         setIsVisible={setIsVisible}
                     />
 
+                    
+                        <Modal
+                            visible={!isLoggedIn && !isSigningUp? true: false}
+                            pointerEvents='auto'
+                            animationType='fade'
+                            transparent={true}
+                            onRequestClose={() => setIsLoggedIn(true)}
+                        >
+                            <View className='w-full h-full bg-customBgBlue justify-center items-center'>
+                                <Text className='text-2xl text-red-500'>{loginErrorMessage}</Text>
+                                <Text className='text-4xl'>LOG IN</Text>
+                                <TextInput 
+                                    className='border-black border-2 w-[90%] h-14 pl-4 text-xl pb-1 bg-transparent rounded-full mt-8 placeholder:text-black'
+                                    onChangeText={setLoginUsername}
+                                    value={loginUsername}
+                                    placeholder='Username'
+                                />
+                                <TextInput 
+                                    className='border-black border-2 w-[90%] h-14 pl-4 text-xl pb-1 bg-transparent rounded-full mt-8 placeholder:text-black'
+                                    onChangeText={setLoginEmail}
+                                    value={loginEmail}
+                                    placeholder='Email'
+                                />
+                                <TextInput 
+                                    className='border-black border-2 w-[90%] h-14 pl-4 text-xl pb-1 bg-transparent rounded-full mt-8 placeholder:text-black'
+                                    onChangeText={setLoginPassword}
+                                    value={loginPassword}
+                                    placeholder='Password'
+                                />
+                                <Pressable className='w-[90%] h-14 mt-8 border-black border-2 justify-center items-center rounded-full active:bg-blue-100' onPress={LogIn}>
+                                    <Text className='text-4xl'>
+                                        Log In
+                                    </Text>
+                                </Pressable>
+
+                                <Pressable onPress={SignUp} className='w-[40%] h-14 mt-4 justify-center items-center rounded-full active:bg-blue-100'>
+                                        <Text className='text-xl text-blue-700'>Sign Up?</Text>
+                                </Pressable>
+                            </View>
+                        </Modal>
+
+
+
+
+
                     <View className='h-52 ml-4'>
                         <View className='h-16 justify-center'>
                             <Text className=' text-3xl font-bold text-stone-900'>10 / 12 Items Studied!!!</Text>
                         </View>
 
+
                         <View className='h-20 mt-6'>
                             <FlatList
                                 className=''
                                 ref={dateListRef}
-                                initialScrollIndex={formattedDay}
+                                initialScrollIndex={formattedDay-1}
                                 getItemLayout={(data, index) => ({
                                     length: 65,
                                     offset: 8 + (65 * (index - 1)),
                                     index,
                                 })}
-                                // onScrollToIndexFailed={() => {dateListRef.current?.scrollToOffset({offset: 0, animated: true})}}
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
                                 data={dateTimes}
@@ -282,10 +421,8 @@ const studyTracker = (): ReactNode => {
                                             setActiveId={setActiveId} 
                                             filterByDate={handleFilterByDate}/>
                                     </>
-                                    
                                 )}
                                 contentContainerStyle={{
-                                    // height: 30,
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: 30,
@@ -316,7 +453,7 @@ const studyTracker = (): ReactNode => {
                             <Text className='pt-2 font-normal text-sm flex-1 line-clamp-1 w-60'>{item.assignmentDescription}</Text>
                         </View>
                         <View className='w-16 items-center justify-center'>
-                            <ToggleButton assignmentId={Number(item.assignmentID)} finishedAssignment={handleFinishedAssignments}/> 
+                            <ToggleButton assignmentId={item.assignmentID} finishedAssignment={handleFinishedAssignments}/> 
                         </View>
                     </View>
                 )

@@ -1,5 +1,7 @@
 import { ImageSourcePropType } from "react-native"
 import axios from 'axios'
+import * as SecureStore from 'expo-secure-store'
+import { getAccessToken } from "./userAuth"
 
 
 const date = new Date()
@@ -10,8 +12,12 @@ const date = new Date()
 
 export type userDataType = {
     name: string
-    id: number
+    id: string
     email: string
+}
+
+export type futureStudiesObjType = {
+    [key: `${number}_days`]: [string,boolean]
 }
 
 export type studyItemsType = {
@@ -25,6 +31,7 @@ export type studyItemsType = {
     isCompleted: boolean
     dateaddedObj: Date
     dateStartedId: string
+    extraDates: futureStudiesObjType
 }
 
 export type studyItemsAPICallType = {
@@ -42,6 +49,7 @@ export type studyItemsAPICallType = {
     }
     icon: string
     is_Completed: string
+    extra_dates: futureStudiesObjType
 }
 
 export type dateObjType = {
@@ -72,7 +80,22 @@ export type SubjectApiInfoType = {
     }
 }
 
+export type SubjectApiType = {
+    name: string,
+    description: string,
+    created_at: string,
+    user: string,
+    subject_ID: string,
+}
 
+export type SubjectName = {
+    name: string
+}
+
+export type TokenPackageType = {
+    accessToken:string, 
+    refreshToken:string,
+}
 
 
 
@@ -91,44 +114,6 @@ export enum Months {
     Dec = 'Dec',
 }
 
-// export enum Subjects {
-//     Chemistry = 'Chemistry',
-//     Math = 'Math',
-//     English = 'English',
-//     Biology = 'Biology',
-//     Physics = 'Physics',
-//     Programming = 'Programming',
-//     History = 'History',
-//     Psychology = 'Psychology',
-//     Accounting = 'Accounting',
-//     Wind_Synphony = 'Wind_Synphony'
-// }
-
-
-
-
-// export enum Subjects
-
-
-
-
-
-export function getUserData():userDataType {
-    const userData:userDataType = {
-        name: 'Austin Harrison',
-        id: 1122255333222,
-        email: 'Austin@gmail.com'
-    }
-    return userData
-}
-
-
-
-export function isValidSubject(name:any) {
-    // return Object.values(Subjects).includes(name)
-    return true
-}
-
 
 
     
@@ -138,26 +123,47 @@ export function isValidSubject(name:any) {
 
 
 
+export async function getAllEarliestDateObj() {
+    let userStudyObjNew:studyItemsType[] = []
+    const accessToken = await getAccessToken()
+    if (accessToken) {
+        try {
+        const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Assignment/`, {
+            headers: {
+                "ngrok-skip-browser-warning": "true",
+                'Authorization': `Bearer ${accessToken}`
+            }
+        })
+        const responses:studyItemsAPICallType[] = response.data
+        responses.map((response) => {
+                userStudyObjNew?.push({
+                assignmentName: response.assignment_name,
+                assignmentID: String(response.assignment_ID),
+                assignmentDescription: response.assignment_description,
+                dateAdded: (response.date_started),
+                remainingStudySessions: Number(response.remaining_study_sessions),
+                subject: response.subject.name,
+                icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
+                isCompleted: Boolean(response.is_Completed),
+                dateaddedObj: new Date(response.date_started),
+                dateStartedId: String(response.date_started),
+                extraDates: response.extra_dates
 
+            })
+        })
+        } catch (error) {
+            console.log('getAllEarliestDateObj')
+            console.error(error)
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        const earliestStudyObj = userStudyObjNew.reduce((earliest, current) => {
+            return new Date(current.dateAdded) < new Date(earliest.dateAdded) ? current : earliest
+        })
+        return earliestStudyObj
+    } else {
+        return false
+    }
+}
 
 
 
@@ -172,7 +178,7 @@ export function getDateObj():dateObjType[] {
     
     for (let i = 1; i <= lastDay; i++) {
         dateObj.push({
-            id: String(String(year) + "-" + String(numMonth) + '-' + String(i)),
+            id: String(String(year) + "-" + String(numMonth) + '-' + String(i).padStart(2,'0')),
             date: i,
             month: month,
             year: year,
@@ -184,34 +190,54 @@ export function getDateObj():dateObjType[] {
 
 
 
-export async function getSubjectInfo(): Promise<subjectInfoType[]>  {
+
+
+
+
+export async function getSubjectInfo(): Promise<subjectInfoType[] | false>  {
     let responses:SubjectApiInfoType[] = []
     const studyInfoObj:subjectInfoType[] = []
-    try {
-        const response = await axios.get('http://127.0.0.1:8000/api/Subject_Info/')
-        responses = response.data
-    } catch(error) {
-        console.log(error)
-    }
-    responses.forEach((response) => {
-        if (true) {
-            studyInfoObj.push({
-                icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
-                subjectName: response.subject_name.name,
-                numSubStudyItems: Number(response.num_sub_study_items),
-                id: response.id,
+    const accessToken = await getAccessToken()
+    if (accessToken)  {
+        try {
+            const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Subject_Info/`, {
+                headers: {
+                    "ngrok-skip-browser-warning": "true",
+                    'Authorization': `Bearer ${accessToken}`
+                }
             })
+            responses = response.data
+        } catch(error) {
         }
-    })
-    return studyInfoObj
+        responses.forEach((response) => {
+            if (true) {
+                studyInfoObj.push({
+                    icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
+                    subjectName: response.subject_name.name,
+                    numSubStudyItems: Number(response.num_sub_study_items),
+                    id: response.id,
+                })
+            }
+        })
+        return studyInfoObj
+    } else {
+        return false
+    }
 }
 
 
 
-export async function getUserStudyItems(newStudySession?:studyItemsType): Promise<studyItemsType[]> {
+export async function getUserStudyItems(newStudySession?:studyItemsType): Promise<studyItemsType[] | false> {
     let userStudyObjNew:studyItemsType[] = []
-    try {
-        const response = await axios.get('http://172.26.68.239:8000/api/Assignment/')
+    const accessToken = await getAccessToken()
+    if (accessToken) {
+        try {
+        const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Assignment/`, {
+            headers: {
+                "ngrok-skip-browser-warning": "true",
+                'Authorization': `Bearer ${accessToken}`
+            }
+        })
         const responses:studyItemsAPICallType[] = response.data
         responses.map((response) => {
                 userStudyObjNew?.push({
@@ -225,13 +251,132 @@ export async function getUserStudyItems(newStudySession?:studyItemsType): Promis
                 isCompleted: Boolean(response.is_Completed),
                 dateaddedObj: new Date(response.date_started),
                 dateStartedId: String(response.date_started),
+                extraDates: response.extra_dates,
             })
         })
-    } catch (error) {
-        console.log('error')
-        console.error(error)
+        } catch (error) {
+            console.log('Status:', error.response.status);
+            console.log('Error data:', error.response.data);
+            console.log('error at getUserStudyItem')
+            return false
+        }
+        return userStudyObjNew
+    } else {
+        return false
     }
-    return userStudyObjNew
+    
+}
+
+
+
+export async function getSubjectList(): Promise<SubjectName[] | false> {
+    let names: SubjectName[] = []
+    const accessToken = await getAccessToken()
+    if (accessToken) {
+        try {
+            const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Subject/`, {
+                headers: {
+                    "ngrok-skip-browser-warning": "true",
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            })
+            
+            const values = response.data.map((value:SubjectApiType) => {
+                names.push({name: value.name})
+            })
+        } catch (error) {
+            console.log('error at getSubjectList')
+            console.error(error)
+        }
+        return names
+    } else {
+        return false
+    }
+}
+
+
+
+export async function getUserData():Promise<userDataType | false> {
+    const accessToken = await getAccessToken()
+    if (accessToken) {
+        let userData: userDataType = {
+                name: '',
+                id: '',
+                email: '',
+            }
+        try {
+            const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/auth/user/`, {
+                headers: {
+                    "ngrok-skip-browser-warning": "true",
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            })
+            userData = {
+                name: response.data['username'],
+                id: response.data['pk'],
+                email: response.data['email'],
+            }
+            
+        } catch(error) {
+            console.log('user data error', error)
+        }
+        return userData
+    } else {
+        return false
+    }
+}
+
+
+
+
+
+
+export async function addNewAssignment() {
+    const accessToken = await getAccessToken()
+    if (accessToken) {
+        try {
+            const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Subject/`, {
+                headers: {
+                    "ngrok-skip-browser-warning": "true",
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            })
+            // console.log('hit the api backend')
+            // console.log(response.data)
+            const chemStudySubject:SubjectApiType[] = response.data.filter(subject => subject['name'] === 'Chemistry')
+            // console.log(chemStudySubject)
+            const chemSubjectID = chemStudySubject[0]['subject_ID']
+            // console.log(chemSubjectID)
+
+            try {
+                const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/Assignment/`,
+                    {
+                        assignment_name: 'chemistry',
+                        assignment_description: 'moles',
+                        remainingStudySessions: '5',
+                        isCompleted: false,
+                        subject_id: chemSubjectID
+                    },
+                    {
+                    headers: {
+                        "ngrok-skip-browser-warning": "true",
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                })
+                // console.log(response.data)
+            } catch(error) {
+                console.log('Status:', error.response.status);
+                console.log('Error data:', error.response.data);
+            }
+
+        } catch (error) {
+            console.log('Status:', error.response.status);
+            console.log('Error data:', error.response.data);
+        }
+
+    } else {
+        return false
+    }
 }
 
 
@@ -263,87 +408,18 @@ export async function getUserStudyItems(newStudySession?:studyItemsType): Promis
 
 
 
+export enum Subjects {
+    Chemistry = 'Chemistry',
+    Math = 'Math',
+    English = 'English',
+    Biology = 'Biology',
+    Physics = 'Physics',
+    Programming = 'Programming',
+    History = 'History',
+    Psychology = 'Psychology',
+    Accounting = 'Accounting',
+    Wind_Synphony = 'Wind_Synphony'
+}
 
+const formattedDate: string = date.toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'});
 
-
-
-
-
-// const formattedDate: string = date.toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'});
-// export function getUserStudyItemss(newStudySession?:studyItemsType):studyItemsType[] {
-//     let studyItems:studyItemsType[] = [{
-//         assignmentName: 'Chem 3-2',
-//         assignmentID: '5433452535234',
-//         assignmentDescription: 'extremely tricky namings',
-//         dateAdded: formattedDate,
-//         remainingStudySessions: 3,
-//         subject: Subjects.Physics,
-//         icon: require('../assets/icons/BookIcon.jpg'),
-//         isCompleted: false,
-//         dateaddedObj: date,
-//         dateStartedId: 'qertdhsdfgsd'
-//     },
-//     {
-//         assignmentName: 'Psyche 1-1',
-//         assignmentID: '535234',
-//         assignmentDescription: 'Human development',
-//         dateAdded: formattedDate,
-//         remainingStudySessions: 1,
-//         subject: Subjects.Psychology,
-//         icon: require('../assets/icons/BookIcon.jpg'),
-//         isCompleted: false,
-//         dateaddedObj: date,
-//         dateStartedId: 'qertdhsdfgsd'
-//     },
-//     {
-//         assignmentName: 'Chem 1-1',
-//         assignmentID: '4234234565234',
-//         assignmentDescription: 'Focused on moles laskdfjaslkdfjslk fsjafl kasjdf alksdfj aslkdf ajsdflka sjdflkas dfjaklsd fjaslkdf jaslkdf jsadklf ajsd',
-//         dateAdded: formattedDate,
-//         remainingStudySessions: 2,
-//         subject: Subjects.Chemistry,
-//         icon: require('../assets/icons/BookIcon.jpg'),
-//         isCompleted: false,
-//         dateaddedObj: date,
-//         dateStartedId: 'qertdhsdfgsd'
-//     },]
-//     return studyItems
-// }
-
-// export function getDateObjj():dateObjType[] {
-//     const dateObj = [
-//         {
-//             id: 'asdfasdf',
-//             date: 1,
-//             month: Months.Oct,
-//             year: 2026,
-//             lastDayOfMonth: 31
-//         },
-//         {
-//             id: 'fdsafsd',
-//             date: 2,
-//             month: Months.Oct,
-//             year: 2026,
-//             lastDayOfMonth: 31
-//         },
-//     ]
-//     return dateObj
-// }
-
-// export function getSubjectInfoo(): subjectInfoType[] {
-//     const studyInfoObj:subjectInfoType[] = [
-//         {
-//             icon: require('../assets/icons/BookIcon.jpg'),
-//             subjectName: Subjects.Math,
-//             numSubStudyItems: 3,
-//             id: '12344562'
-//         },
-//         {
-//             icon: require('../assets/icons/BookIcon.jpg'),
-//             subjectName: Subjects.Chemistry,
-//             numSubStudyItems: 3,
-//             id: '543212'
-//         },
-//     ]
-//     return studyInfoObj
-// }
