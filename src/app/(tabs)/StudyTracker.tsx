@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, Button, Pressable, FlatList, Image, TouchableOpacity, Dimensions, Alert, Modal, TextInput } from 'react-native'
-import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { act, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { dateObjType, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, Months, studyItemsType, subjectInfoType, TokenPackageType, userDataType } from '../../../UserInfo/userInfo'
+import { addNewAssignment, dateObjType, getAllEarliestDateObj, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, Months, studyItemsType, subjectInfoType, TokenPackageType, userDataType } from '../../../UserInfo/userInfo'
 import {getToken, getUserAcessOrRefreshToken, refreshingToken, removeTokens, saveTokens, validateToken} from '../../../UserInfo/userAuth'
 import ToggleButton from '../../../components/Button'
 import Icon from '../../../components/Icon'
@@ -10,22 +10,12 @@ import DateButton from '../../../components/DateButton'
 import SubjectScrollView from '../../../components/SubjectScrollView'
 import StudyHeader from '../../../components/StudyHeader'
 import { Redirect, useRouter } from 'expo-router'
+import { formatDay, formatNumMonth, formatYear } from '../../../functions/DateModifiers'
 
-
-
-
-export function dateIdRetriever(day:number, month:any, year:number) {
-        const id = getDateObj().filter((time) => time.date===day && time.month===month && time.year==year)
-        return id[0]
-    }
 
 
 const studyTracker = (): ReactNode => {
-    const [userData, setUserData] = useState<userDataType>({
-            name: '',
-            id: '',
-            email: '',
-        })
+    const [userData, setUserData] = useState<userDataType>({name: '', id: '', email: ''})
     const [studyItems, setStudyItems] = useState<studyItemsType[]>([]) //changed
     const [studySubjects, setStudySubjects] = useState<subjectInfoType[]>([])
     const [dateTimes, setDateTimes] = useState(() => getDateObj())
@@ -76,15 +66,18 @@ const studyTracker = (): ReactNode => {
         async function loadFromAPI() {
             if (isLoggedIn) {
                 const userData = await getUserData()
-                setUserData(userData)
-
-                const studyValue = await getUserStudyItems()
-                const subjectValue = await getSubjectInfo()
-
+                if (userData) {
+                    setUserData(userData)
+                }
+                // const studyValue = await handleFilterByDate(activeID) 
+                const studyValue = await reStudyDateFilter()
                 if (studyValue) {
                     setStudyItems(studyValue)
                 }
-                setStudySubjects(subjectValue)
+                const subjectValue = await getSubjectInfo()
+                if (subjectValue) {
+                    setStudySubjects(subjectValue)
+                }
             }
         }
         loadFromAPI()
@@ -116,13 +109,53 @@ const studyTracker = (): ReactNode => {
         console.log('IS WORKING')
         // console.log(await getUserData())
         // getUserAcessOrRefreshToken()
-        removeTokens()
+        // removeTokens()
         // const response = await getToken()
         // console.log(response)
         // console.log('tested')
         // const refreshToken:any = await getToken()
         // console.log(refreshToken)
         // console.log('high', await refreshingToken(refreshToken['refreshToken']))
+        // await getAllEarliestDateObj()
+        // console.log(activeID)
+        // addNewAssignment()
+        reStudyDateFilter()
+        
+        
+        
+        
+        
+    }
+
+    async function reStudyDateFilter(date?:string) {
+        const allStudyItems = await getUserStudyItems()
+        let presentFilteredStudyItems
+        let fullFilteresStudyItems
+        // if (date) {
+            if (allStudyItems) {
+            const futureFilteredStudyItems = allStudyItems.filter(item => {
+                for (let i in item) {
+                    if (i=='extraDates') {
+                        for (let j in item[i]) {
+                            if (item[i][j][0]===activeID) {
+                                return true
+                            }
+                        }
+                    }
+                }
+            })
+            presentFilteredStudyItems = allStudyItems.filter(item => item.dateAdded===activeID) 
+            fullFilteresStudyItems = [...presentFilteredStudyItems, ...futureFilteredStudyItems]
+        // }
+        
+
+
+            
+            // console.log('presentFilteredStudyItems', presentFilteredStudyItems)
+            
+        // setStudyItems(fullFilteresStudyItems)
+        return fullFilteresStudyItems
+        }
     }
 
 
@@ -132,7 +165,6 @@ const studyTracker = (): ReactNode => {
         const accessToken:string = response['accessToken']
         if (accessToken) {
             setIsLoggedIn(true)
-            
         } else {
             setLoginErrorMessage(response.response.data['non_field_errors'][0])
         }
@@ -140,7 +172,6 @@ const studyTracker = (): ReactNode => {
 
 
     function SignUp() {
-        console.log('signing up')
         setIsSigningUp(true)
         router.push('/SignUp')
     }
@@ -150,27 +181,7 @@ const studyTracker = (): ReactNode => {
 
 
 
-    // formatting date functions
-    function formatDay(date:Date):string {
-        return date.toLocaleDateString('en-US', {
-        day: 'numeric'
-        });
-    }
-    function formatMonth(date:Date):string {
-        return date.toLocaleDateString('en-US', {
-        month: 'short'
-        });
-    }
-    function formatNumMonth(date:Date):string {
-        return date.toLocaleDateString('en-US', {
-        month: 'numeric'
-        });
-    }
-    function formatYear(date:Date):string {
-        return date.toLocaleDateString('en-US', {
-        year: 'numeric'
-        });
-    }
+    
 
 
     // function takes in two parameters the id of the assignment and if the box was 
@@ -183,16 +194,6 @@ const studyTracker = (): ReactNode => {
         const finished = updated.filter(item => item.isCompleted)
         const notFinished = updated.filter(item => !item.isCompleted)
         setStudyItems([...notFinished, ...finished])
-        // the code below seems to be doing the exact same thing so test it and see if the code above works as intended
-        // if (isCompleted) {
-        //     const finished = updated.filter(item => item.isCompleted)
-        //     const notFinished = updated.filter(item => !item.isCompleted)
-        //     setStudyItems([...notFinished, ...finished])
-        // } else {
-        //     const finished = updated.filter(item => item.isCompleted)
-        //     const notFinished = updated.filter(item => !item.isCompleted)
-        //     setStudyItems([...notFinished, ...finished])
-        // }
     }
 
 
@@ -207,17 +208,21 @@ const studyTracker = (): ReactNode => {
     // to ensure that all finished and unfinished study assignments are still organized
     async function handleFilterBySubject(subjectName:string | null):Promise<void> { //added an async and a Promise<void>
         let dummyStudyItems
-        const data = await getUserStudyItems()
+        const data = await reStudyDateFilter()
+        console.log(data)
         if (data) {
             if (!subjectName) {
                 // see if you can add an extra layer to the getUserStudyItems() function where if you click it and you have already loaded everything, it gets a parameter that tells it you've already have the data and returns the data instantly through and if () block
-                dummyStudyItems = data.filter(item => item.dateStartedId === activeID)
+                dummyStudyItems = data
             }
             else {
-                dummyStudyItems = data.filter((items) => items.subject == subjectName && items.dateStartedId === activeID)
+                dummyStudyItems = data.filter((items) => items.subject == subjectName)
             }
             const finished = dummyStudyItems.filter(item => item.isCompleted)
             const notFinished = dummyStudyItems.filter(item => !item.isCompleted)
+            console.log(finished)
+            console.log(notFinished)
+
             setStudyItems([...notFinished, ...finished])
         }
     }
@@ -227,11 +232,12 @@ const studyTracker = (): ReactNode => {
     // eventually make the dates a list and filter by if the date.dateStartedId is in the list
     // creates a function that takes in the id of the date button and filters
     // all of the study items to see which ones are tied to the specific date
-    async function handleFilterByDate(id:string): Promise<void> {
-        const data = await getUserStudyItems()
+    async function handleFilterByDate(id:string): Promise<studyItemsType[] | void> {
+        const data = await reStudyDateFilter()
         if (data) {
-            const newDateFilterArray = data.filter((date) => date.dateStartedId === id)
+            const newDateFilterArray = data
             setStudyItems(newDateFilterArray)
+            return newDateFilterArray
         }
         
     }
@@ -241,16 +247,29 @@ const studyTracker = (): ReactNode => {
     // and then converts the newDate into a day, month, and year. If the new
     // date is within the time range of the IdRetriever, then the formattedDay
     // and formattedMonth are changed while the activeId is shifted as well
-    function handleNewDate(newDate:Date) {
-        const day = Number(formatDay(newDate))
-        const month = formatMonth(newDate)
-        const year = Number(formatYear(newDate))
-        if (dateIdRetriever(day, month, year) !== undefined) {
-            setFormattedDay(day)
-            setFormattedMonth(month)
-            setActiveId(dateIdRetriever(day, month, year).id)
-        } 
-        else {
+    async function handleNewDate(newDate:Date) {
+        const day = (formatDay(newDate))
+        const month = (formatNumMonth(newDate))
+        const year = (formatYear(newDate))
+        const dateID = `${year}-${month}-${day.padStart(2,'0')}`
+        const response:false | studyItemsType = await getAllEarliestDateObj()
+        let isAfterFirstAssignment
+        if (response) {
+            isAfterFirstAssignment = new Date(response['dateAdded']).toISOString() <= new Date(dateID).toISOString()
+        }
+        if (isAfterFirstAssignment) {
+            setActiveId(() => dateID)
+            if (isLoggedIn) {
+                const studyData = await reStudyDateFilter(dateID)
+                if (studyData) {
+                    const dateFilteredStudyData = studyData
+                    console.log(dateFilteredStudyData)
+                    console.log('filtering')
+                    setStudyItems(dateFilteredStudyData)
+                }
+               
+            }
+        } else {
             Alert.alert('Date to Far Back', 'The date you have selected is before your first study assignment')
         }
     }

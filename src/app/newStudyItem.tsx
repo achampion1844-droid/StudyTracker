@@ -4,7 +4,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { dateObjType, getSubjectList, getUserStudyItems, Months, studyItemsType, SubjectName } from '../../UserInfo/userInfo'
 import { useRouter } from 'expo-router'
 import { Selector } from 'rn-selector';
-import { dateIdRetriever } from './(tabs)/StudyTracker'
+import { formatDay, formatNumMonth, formatYear } from '../../functions/DateModifiers'
+import uuid from 'react-native-uuid';
 
 const newStudyItem = () => {
     const [newStudyItem, setNewStudyItem] = useState<studyItemsType | null>(null)
@@ -14,6 +15,7 @@ const newStudyItem = () => {
     const router = useRouter()
     const [response, setResponse] = useState<dateObjType | null>(null)
     const [Subjects, setSubjects] = useState<string[]>(['Chemistry','Biology', 'Physics', 'Wind_Symphony'])
+    const [DateID, setDateID] = useState<string>('')
     type StudySubjectsObjType = {
         label:string,
         value:string,
@@ -24,14 +26,16 @@ const newStudyItem = () => {
         async function getSubjectsAPI() {
             if (isMounted) {
                 const subjectValue = await getSubjectList()
-                setSubjects(subjectValue.map((name) => name.name))
+                if (subjectValue) {
+                    setSubjects(subjectValue.map((name) => name.name))
+                }
             }
         }
         getSubjectsAPI()
         return () => {
             isMounted = false
         }
-    }, [Subjects])
+    }, []) 
     
 
     let StudySubjectOptions:StudySubjectsObjType[] = []
@@ -61,19 +65,10 @@ const newStudyItem = () => {
     });
 
     useEffect(() => {
-        const IDMonth: string = date.toLocaleDateString('en-US', {
-        month: 'short',
-        });
-
-        const IDDay: string = date.toLocaleDateString('en-US', {
-        day: 'numeric',
-        });
-
-        const IDYear: string = date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        });
-
-        setResponse(dateIdRetriever(Number(IDDay), IDMonth, Number(IDYear)) as dateObjType)
+        const year = formatYear(date)
+        const month = formatNumMonth(date)
+        const day = formatDay(date)
+        setDateID(`${year}-${month}-${day.padStart(2,'0')}`)
     },[])
 
 
@@ -82,13 +77,10 @@ const newStudyItem = () => {
         if (!subject) {
             return
         }
-        if (!response) {
-            console.log('uh oh')
-            return
-        }
+        // console.log('newAssignmentObj creations')
         const newAssignmentObj:studyItemsType = {
             assignmentName: assignmentName,
-            assignmentID: String(getRandomInt(10000000000,10000000000000)),
+            assignmentID: String(uuid.v4()),
             assignmentDescription: assignmentDescription,
             dateAdded: formattedDate,
             remainingStudySessions: 5,
@@ -96,10 +88,13 @@ const newStudyItem = () => {
             icon: require('../../assets/icons/BookIcon.jpg'),
             isCompleted: false,
             dateaddedObj: date,
-            dateStartedId: response.id
+            dateStartedId: DateID,
+            extraDates: {"14_days": ["2026-11-18", false], "1_days": ["2026-11-05", false], "28_days": ["2026-12-02", false], "3_days": ["2026-11-07", false], "7_days": ["2026-11-11", false], "84_days": ["2027-01-27", false]}
         }
+        // console.log(newAssignmentObj)
+        // console.log('dateID', newAssignmentObj.dateStartedId)
         getUserStudyItems(newAssignmentObj)
-        router.push('/(tabs)/StudyTracker')
+        router.back()
     }
   
     return (

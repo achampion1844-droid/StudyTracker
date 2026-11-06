@@ -82,6 +82,8 @@ export async function validateToken(accessToken: string | null):Promise<boolean>
     if (!accessToken) {
         return false
     }
+    // console.log('accessToken', accessToken)
+    // console.log('validatingToken')
     try {
         const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/auth/token/verify/`, 
                 {
@@ -92,7 +94,9 @@ export async function validateToken(accessToken: string | null):Promise<boolean>
                     }
                 }
             )
+            // console.log(response.data)
             if (Object.keys(response.data).length === 0) {
+                // console.log('returning true')
                 return true
             }
             return false
@@ -137,27 +141,35 @@ export async function refreshingToken(refreshToken: string | null):Promise<boole
 
 
 
-export async function getAccessToken(): Promise<string | false | undefined> {
+export async function getAccessToken(): Promise<string | false> {
     try {
         let accessToken:string | null = await SecureStore.getItemAsync('accessToken')
         const refreshToken:string | null = await SecureStore.getItemAsync('refreshToken')
         const isValidToken:boolean = await validateToken(accessToken)
+        // console.log(isValidToken)
         if (isValidToken) {
+            // console.log('returning correct accesstoken')
             return String(accessToken)
         //This whole else block is completly untested right now
+        // figure out why there was an error when the server was started in the morning
         } else {
+            // console.log('heading to use refresh token')
             if (refreshToken) {
+                // console.log('else block')
                 const newAccessToken = await refreshingToken(refreshToken)
+                // console.log('new Access Token' , newAccessToken)
                 if (typeof(newAccessToken) !== 'boolean') {
+                    // console.log('returning new access Token')
                     return newAccessToken
                 }
             }
             
         }
     } catch (error) {
-        console.log(error)
+        console.log('error at getAccessToken')
         return false
     }
+    return false
 }
 
 

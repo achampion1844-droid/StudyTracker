@@ -8,6 +8,7 @@ const StudyHeader = ({filterNewDate, name} : {filterNewDate: (scrollDate:Date) =
     const [scrollDate, setScrollDate] = useState<Date | null>(null)
     const [open, setOpen] = useState(false)
     const [formattedDate, setFormattedDate] = useState<string>('')
+    const [newDate, setNewDate] = useState<unknown>('')
 
     const router = useRouter()
 
@@ -28,13 +29,20 @@ const StudyHeader = ({filterNewDate, name} : {filterNewDate: (scrollDate:Date) =
     }
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setOpen(false);
+        if (Platform.OS === 'android') {
+        setOpen(false);
+        }
+        if (selectedDate) {
+        setNewDate(selectedDate)
+        setScrollDate(selectedDate)
+        }
     }
-    if (selectedDate) {
-      filterNewDate(selectedDate)
-      setScrollDate(selectedDate)
-    }
+
+  function processNewDate() {
+    setOpen(false) 
+    if (newDate instanceof Date) {
+        filterNewDate(newDate)
+    }   
   }
 
 
@@ -81,7 +89,7 @@ const StudyHeader = ({filterNewDate, name} : {filterNewDate: (scrollDate:Date) =
                                 display={Platform.OS === 'ios' ? 'spinner' : 'default'} // sets different types of datetikepicker for different os
                                 onChange={handleDateChange} //what happens when the value of the  datetimepicker changes
                             /> 
-                            <Button title='Done' onPress={() => setOpen(false)}/>
+                            <Button title='Done' onPress={() => {processNewDate()}}/>
                         </View>
                        
                     </View>
