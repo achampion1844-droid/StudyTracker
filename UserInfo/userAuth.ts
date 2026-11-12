@@ -6,16 +6,19 @@ import { TokenPackageType } from "./userInfo"
 
 
 
-
+const TOKEN_OPTIONS = {
+    keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+}
 
 export async function saveTokens(accessToken: string, refreshToken: string): Promise<boolean> {
     try {
-        await SecureStore.setItemAsync('accessToken', accessToken)
-        await SecureStore.setItemAsync('refreshToken', refreshToken)
-        // console.log('Sucessful')
+        await SecureStore.setItemAsync('accessToken', accessToken, TOKEN_OPTIONS)
+        await SecureStore.setItemAsync('refreshToken', refreshToken, TOKEN_OPTIONS)
         return true
     } catch (error) {
-        console.error("Could not save tokens to Keychain:", error)
+        console.error("Could not save tokens to secure storage:", error)
+        await SecureStore.deleteItemAsync('accessToken')
+        await SecureStore.deleteItemAsync('refreshToken')
         return false
     }
 }
@@ -73,35 +76,24 @@ export async function removeTokens(): Promise<boolean> {
 
 
 
-
-
-
-
+const api = axios.create({
+    baseURL: `${process.env.EXPO_PUBLIC_API_URL}`,
+    timeout: 10000,
+    headers: {'Content-Type': 'application/json'},
+})
 
 export async function validateToken(accessToken: string | null):Promise<boolean> {
-    if (!accessToken) {
-        return false
-    }
-    // console.log('accessToken', accessToken)
-    // console.log('validatingToken')
+    if (!accessToken) return false
     try {
-        const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/auth/token/verify/`, 
-                {
-                    'token': accessToken
-                }, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                }
-            )
-            // console.log(response.data)
-            if (Object.keys(response.data).length === 0) {
-                // console.log('returning true')
-                return true
-            }
-            return false
+        const response = await api.post(
+            `/api/auth/token/verify/`, 
+            {'token': accessToken},
+        )
+        if (Object.keys(response.data).length === 0) return true
+        return false
     } catch(error) {
-        console.log('error not a valid token', error)
+        const status = axios.isAxiosError(error) ? error.response?.status : 'no response'
+        console.log('Token validation failed, status:', status)
         return false
     }
 }
@@ -112,28 +104,18 @@ export async function validateToken(accessToken: string | null):Promise<boolean>
 
 
 
-export async function refreshingToken(refreshToken: string | null):Promise<boolean | string> {
-    if (!refreshToken) {
-        return false
-    }
+export async function refreshingToken(refreshToken: string | null):Promise<string | false> {
+    if (!refreshToken) return false
     try {
-        const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/auth/token/refresh/`, 
-                {
-                    'refresh': refreshToken
-                }, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${refreshToken}`
-                    }
-                }
-            )
-            if (response.data) {
-                await saveTokens(response.data['access'], response.data['refresh'])
-                return response.data['access'], response.data['refresh']
-            }
-            return false
+        const {data} = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/auth/token/refresh/`, 
+            {'refresh': refreshToken}, 
+            {headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${refreshToken}`}}
+        )
+        if (!data.access) return false
+        const saved = await saveTokens(data['access'], data['refresh'] ?? refreshToken) 
+        return saved ? data.access : false
     } catch (error) {
-        console.log('error refresh token not working', error)
+        console.log('error refresh token not working', error.response?.status)
         return false
     }
 }
@@ -143,40 +125,30 @@ export async function refreshingToken(refreshToken: string | null):Promise<boole
 
 export async function getAccessToken(): Promise<string | false> {
     try {
-        let accessToken:string | null = await SecureStore.getItemAsync('accessToken')
-        const refreshToken:string | null = await SecureStore.getItemAsync('refreshToken')
-        const isValidToken:boolean = await validateToken(accessToken)
-        // console.log(isValidToken)
-        if (isValidToken) {
-            // console.log('returning correct accesstoken')
+        const accessToken = await SecureStore.getItemAsync('accessToken')
+        if (accessToken && (await validateToken(accessToken))) {
             return String(accessToken)
-        //This whole else block is completly untested right now
-        // figure out why there was an error when the server was started in the morning
-        } else {
-            // console.log('heading to use refresh token')
-            if (refreshToken) {
-                // console.log('else block')
-                const newAccessToken = await refreshingToken(refreshToken)
-                // console.log('new Access Token' , newAccessToken)
-                if (typeof(newAccessToken) !== 'boolean') {
-                    // console.log('returning new access Token')
-                    return newAccessToken
-                }
-            }
-            
         }
+
+        const refreshToken = await SecureStore.getItemAsync('refreshToken')
+        if (!refreshToken) return false
+        
+        const newAccessToken = await refreshingToken(refreshToken)
+        if (typeof(newAccessToken) !== 'string') {
+            await SecureStore.deleteItemAsync('accessToken')
+            await SecureStore.deleteItemAsync('refreshToken')
+            return false
+        }
+
+        return newAccessToken
+
     } catch (error) {
         console.log('error at getAccessToken')
+        await SecureStore.deleteItemAsync('accessToken')
+        await SecureStore.deleteItemAsync('refreshToken')
         return false
     }
-    return false
 }
-
-
-
-
-
-
 
 
 
@@ -192,10 +164,10 @@ export async function getUserAcessOrRefreshToken(username:string, email:string, 
                     'Content-Type': 'application/json',
             }
         })
-        saveTokens(response.data['access'], response.data['refresh'])
+        await saveTokens(response.data['access'], response.data['refresh'])
         return {'accessToken':response.data['access'], 'refreshToken': response.data['refresh']}
     } catch(error){
-        console.log(error)
-        return error
+        console.log('Login failed. Please check your details at getUserAcessOrRefreshTokens')
+        return false
     }
 }

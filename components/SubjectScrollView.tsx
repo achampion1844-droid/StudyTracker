@@ -14,7 +14,7 @@ const SubjectScrollView = ({studySubjects, filterBySubject, isVisible, setIsVisi
         horizontal 
         className='h-20 ml-4 mb-4'
         showsHorizontalScrollIndicator={false}
-        >
+    >
             <View className='flex-row gap-6 mr-12'>
                 {studySubjects.map((subject) => (
                     <SubjectButton 

@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, Button, Pressable, FlatList, Image, TouchableOpacity, Dimensions, Alert, Modal, TextInput } from 'react-native'
 import React, { act, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { addNewAssignment, dateObjType, getAllEarliestDateObj, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, Months, studyItemsType, subjectInfoType, TokenPackageType, userDataType } from '../../../UserInfo/userInfo'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { addNewAssignment, addNewSubject, dateObjType, futureStudiesObjType, getAllEarliestDateObj, getDateObj, getSubjectInfo, getUserData, getUserStudyItems, Months, studyItemsType, subjectInfoType, TokenPackageType, updateFinishedAssignment, userDataType } from '../../../UserInfo/userInfo'
 import {getToken, getUserAcessOrRefreshToken, refreshingToken, removeTokens, saveTokens, validateToken} from '../../../UserInfo/userAuth'
 import ToggleButton from '../../../components/Button'
 import Icon from '../../../components/Icon'
@@ -11,6 +11,7 @@ import SubjectScrollView from '../../../components/SubjectScrollView'
 import StudyHeader from '../../../components/StudyHeader'
 import { Redirect, useRouter } from 'expo-router'
 import { formatDay, formatNumMonth, formatYear } from '../../../functions/DateModifiers'
+import NavBar from '../../../components/NavBar'
 
 
 
@@ -26,59 +27,46 @@ const studyTracker = (): ReactNode => {
     const todaysDay = Number(date.toLocaleDateString('en-US', {day: 'numeric'}))
     const todaysMonth = (date.toLocaleDateString('en-US', {month: 'short'}))
     
-    const [formattedMonth, setFormattedMonth] = useState(todaysMonth)
-    const [formattedDay, setFormattedDay] = useState(todaysDay)
+
     //modal boolean for setting a new Subject
     const [isVisible, setIsVisible] = useState(false)
     // variable for the new subject name
     const [newSubjectName, setNewSubjectName] = useState('')
+    const [numberOfStudyItemsLeft, setNumberOfStudyItemsLeft] = useState<Number>(0)
     
-    //todaysObj filters all the obj in dateTimes to see which ones have the same day and
-    //month as formattedMonth and formattedDay.
-    const [todaysObj, setTodaysObj] = useState(dateTimes.filter((obj) => obj.month === formattedMonth && obj.date === formattedDay))
+
+
     //activeID is the id of the currect date button that is filtering all the study items
-    const [activeID, setActiveId] = useState<string>(todaysObj.length > 0 ? todaysObj[0].id : '')
+    const [activeID, setActiveId] = useState<string>(`${formatYear(new Date)}-${formatNumMonth(new Date)}-${formatDay(new Date).padStart(2,'0')}`)
+
 
     const [loginUsername, setLoginUsername] = useState<string>('superman')
     const [loginEmail, setLoginEmail] = useState<string>('superman@gmail.com')
     const [loginPassword, setLoginPassword] = useState<string>('1!qQ1!qQ')
     const [loginErrorMessage, setLoginErrorMessage] = useState<String>('')
+    const [visibleNavBar, setVisibleNavBar] = useState<boolean>(false)
 
     const router = useRouter()
     const dateListRef = useRef(null)
-    const THEME = {
-        icon: {
-            size: 50
-        }
-    }
+    const THEME = {icon: {size: 50}}
 
-    // resets todaysObj to filter for the new month and day
-    // handleFilterByDate then filters all of the new study topics by
-    // the id of the currect date button (activeID) and this effect goes
-    // off whenever formattedMonth and formattedDay are changed
+
     useEffect(() => {
-        setTodaysObj(dateTimes.filter((obj) => obj.month === formattedMonth && obj.date === formattedDay))
         handleFilterByDate(activeID)
-    },[formattedMonth, formattedDay])
+    },[activeID])
 
     // loads the api's at the opening of the application and sets the state
     useEffect(() => {
+        if (!isLoggedIn) return
         async function loadFromAPI() {
-            if (isLoggedIn) {
-                const userData = await getUserData()
-                if (userData) {
-                    setUserData(userData)
-                }
-                // const studyValue = await handleFilterByDate(activeID) 
-                const studyValue = await reStudyDateFilter()
-                if (studyValue) {
-                    setStudyItems(studyValue)
-                }
-                const subjectValue = await getSubjectInfo()
-                if (subjectValue) {
-                    setStudySubjects(subjectValue)
-                }
-            }
+            const [userData, studyValue, subjectValue] = await Promise.all([
+                getUserData(),
+                reStudyDateFilter(),
+                getSubjectInfo(),
+            ])
+            if (userData) setUserData(userData)
+            if (studyValue) setStudyItems(studyValue)
+            if (subjectValue) setStudySubjects(subjectValue)
         }
         loadFromAPI()
     },[isLoggedIn])
@@ -86,21 +74,11 @@ const studyTracker = (): ReactNode => {
 
     useEffect(() => {
         async function hasTokenOrRedirect() {
-            const response:any = await getToken()
-            if (response !== null && Object.keys(response).length > 0) {
-                const validate = await validateToken(response['accessToken'])
-                if (validate) {
-                    setIsLoggedIn(true)
-                }
-                else {
-                    setIsLoggedIn(false)
-                }
-            } else {
-                setIsLoggedIn(false)
-            }
+            const token:any = await getToken()
+            const isValid = token?.accessToken ? await validateToken(token.accessToken) : false
+            setIsLoggedIn(isValid ? true : false)
         }
         hasTokenOrRedirect()
-        
     },[])
     
 
@@ -109,7 +87,7 @@ const studyTracker = (): ReactNode => {
         console.log('IS WORKING')
         // console.log(await getUserData())
         // getUserAcessOrRefreshToken()
-        // removeTokens()
+        removeTokens()
         // const response = await getToken()
         // console.log(response)
         // console.log('tested')
@@ -119,43 +97,18 @@ const studyTracker = (): ReactNode => {
         // await getAllEarliestDateObj()
         // console.log(activeID)
         // addNewAssignment()
-        reStudyDateFilter()
-        
-        
-        
-        
-        
+        // reStudyDateFilter()
     }
 
-    async function reStudyDateFilter(date?:string) {
+
+    async function reStudyDateFilter(date?:string) { //logic has been simplifed
         const allStudyItems = await getUserStudyItems()
-        let presentFilteredStudyItems
-        let fullFilteresStudyItems
-        // if (date) {
-            if (allStudyItems) {
-            const futureFilteredStudyItems = allStudyItems.filter(item => {
-                for (let i in item) {
-                    if (i=='extraDates') {
-                        for (let j in item[i]) {
-                            if (item[i][j][0]===activeID) {
-                                return true
-                            }
-                        }
-                    }
-                }
-            })
-            presentFilteredStudyItems = allStudyItems.filter(item => item.dateAdded===activeID) 
-            fullFilteresStudyItems = [...presentFilteredStudyItems, ...futureFilteredStudyItems]
-        // }
-        
-
-
-            
-            // console.log('presentFilteredStudyItems', presentFilteredStudyItems)
-            
-        // setStudyItems(fullFilteresStudyItems)
+        if (!allStudyItems) return
+        let trueDate:string = date || activeID
+        const presentFilteredStudyItems = allStudyItems.filter(item => item.dateAdded === trueDate)
+        const futureFilteredStudyItems = allStudyItems.filter(item => (item.extraDates ? Object.values(item.extraDates) : []).some(entry => entry[0] === trueDate))
+        const fullFilteresStudyItems:studyItemsType[] = [...presentFilteredStudyItems, ...futureFilteredStudyItems].filter((obj, index, self) => index === self.findIndex((o) => o.assignmentID === obj.assignmentID))
         return fullFilteresStudyItems
-        }
     }
 
 
@@ -166,7 +119,7 @@ const studyTracker = (): ReactNode => {
         if (accessToken) {
             setIsLoggedIn(true)
         } else {
-            setLoginErrorMessage(response.response.data['non_field_errors'][0])
+            setLoginErrorMessage(response.response.data['non_field_errors'])
         }
     }
 
@@ -189,10 +142,17 @@ const studyTracker = (): ReactNode => {
     // list to ensure that the assignment is updated with the new value
     // then two lists are created finished and not finished before getting
     // merged together and set into the Study Items list
-    function handleFinishedAssignments(id:string, isCompleted:boolean): void {
-        const updated = studyItems.map((item) => item.assignmentID === String(id) ? {...item, isCompleted} : item) // this might be faulty the String typecast
-        const finished = updated.filter(item => item.isCompleted)
-        const notFinished = updated.filter(item => !item.isCompleted)
+    async function handleFinishedAssignments(id:string, isCompleted:boolean): Promise<void> {
+        let newExtraDates = studyItems.find(item => item.assignmentID === id)?.extraDates
+        for (const session of Object.values(newExtraDates ?? {})) { //Object.values takes the values, puts them into a list but it still pointing to the original bits of data which can be modified through the code
+            if (session.includes(activeID)) {
+                session[1] = isCompleted
+            }
+        }
+        updateFinishedAssignment(id, isCompleted, newExtraDates)
+
+        const finished = studyItems.filter(item => Object.values(item.extraDates ?? {}).some(pair => pair[0] === activeID && pair[1]))
+        const notFinished = studyItems.filter(item => !finished.includes(item))
         setStudyItems([...notFinished, ...finished])
     }
 
@@ -206,25 +166,13 @@ const studyTracker = (): ReactNode => {
     // clicking the chemistry button and then clicking it again. on the second
     // click, a null is returned reseting the button. The list is then reorganized
     // to ensure that all finished and unfinished study assignments are still organized
-    async function handleFilterBySubject(subjectName:string | null):Promise<void> { //added an async and a Promise<void>
-        let dummyStudyItems
+    async function handleFilterBySubject(subjectName:string | null):Promise<void> {
         const data = await reStudyDateFilter()
-        console.log(data)
-        if (data) {
-            if (!subjectName) {
-                // see if you can add an extra layer to the getUserStudyItems() function where if you click it and you have already loaded everything, it gets a parameter that tells it you've already have the data and returns the data instantly through and if () block
-                dummyStudyItems = data
-            }
-            else {
-                dummyStudyItems = data.filter((items) => items.subject == subjectName)
-            }
-            const finished = dummyStudyItems.filter(item => item.isCompleted)
-            const notFinished = dummyStudyItems.filter(item => !item.isCompleted)
-            console.log(finished)
-            console.log(notFinished)
-
-            setStudyItems([...notFinished, ...finished])
-        }
+        if (!data) return
+        const filtered = subjectName ? data.filter((items) => items.subject == subjectName) : data
+        const finished = filtered.filter(item => item.isCompleted)
+        const notFinished = filtered.filter(item => !item.isCompleted)
+        setStudyItems([...notFinished, ...finished])
     }
 
 
@@ -233,13 +181,11 @@ const studyTracker = (): ReactNode => {
     // creates a function that takes in the id of the date button and filters
     // all of the study items to see which ones are tied to the specific date
     async function handleFilterByDate(id:string): Promise<studyItemsType[] | void> {
-        const data = await reStudyDateFilter()
-        if (data) {
-            const newDateFilterArray = data
-            setStudyItems(newDateFilterArray)
-            return newDateFilterArray
+        const filteredData = await reStudyDateFilter(id)
+        if (filteredData) {
+            setStudyItems(filteredData)
         }
-        
+        setActiveId(id) 
     }
 
 
@@ -248,38 +194,34 @@ const studyTracker = (): ReactNode => {
     // date is within the time range of the IdRetriever, then the formattedDay
     // and formattedMonth are changed while the activeId is shifted as well
     async function handleNewDate(newDate:Date) {
-        const day = (formatDay(newDate))
-        const month = (formatNumMonth(newDate))
-        const year = (formatYear(newDate))
-        const dateID = `${year}-${month}-${day.padStart(2,'0')}`
-        const response:false | studyItemsType = await getAllEarliestDateObj()
-        let isAfterFirstAssignment
-        if (response) {
-            isAfterFirstAssignment = new Date(response['dateAdded']).toISOString() <= new Date(dateID).toISOString()
-        }
-        if (isAfterFirstAssignment) {
-            setActiveId(() => dateID)
-            if (isLoggedIn) {
-                const studyData = await reStudyDateFilter(dateID)
-                if (studyData) {
-                    const dateFilteredStudyData = studyData
-                    console.log(dateFilteredStudyData)
-                    console.log('filtering')
-                    setStudyItems(dateFilteredStudyData)
-                }
-               
-            }
-        } else {
+        const dateID = `${formatYear(newDate)}-${formatNumMonth(newDate)}-${formatDay(newDate).padStart(2,'0')}`
+        const response: false | studyItemsType = await getAllEarliestDateObj()
+        const isBeforeFirstAssignment = response ? new Date(response['dateAdded']).toISOString() >= new Date(dateID).toISOString() : true
+        if (isBeforeFirstAssignment) {
             Alert.alert('Date to Far Back', 'The date you have selected is before your first study assignment')
+            return
         }
+          
+        setActiveId(dateID)
+        const studyData = await reStudyDateFilter(dateID)
+        if (studyData) setStudyItems(studyData)
     }
 
-    // when the new subject is added to the list
-    // this function triggers
+
     function newSubjectSubmitButtonPressed() {
-        setIsVisible(false)
+        addNewSubject(newSubjectName)
         setNewSubjectName('')
     }
+
+    function openNavBar() {
+        setVisibleNavBar(true)
+    }
+
+    function handleRemainingStudySessions(remainingStudySessions:futureStudiesObjType) {
+        return Object.values(remainingStudySessions).filter(session => session[0] > activeID).length
+    }
+
+    
 
 
   return (
@@ -298,9 +240,37 @@ const studyTracker = (): ReactNode => {
                         </View>
                     </Pressable>
 
+                    <Pressable className='ml-3 h-6 w-10  active:bg-blue-200' onPress={openNavBar}>
+                        <View >
+                            <Text className=''>
+                                ⚙️
+                            </Text>
+                        </View>
+                    </Pressable>
+
+
+
                     <StudyHeader filterNewDate={handleNewDate} name={userData.name}/>
-
-
+                    
+                    <Modal
+                    visible={visibleNavBar}
+                    transparent
+                    animationType='slide'
+                    onRequestClose={() => setVisibleNavBar(false)}
+                    >
+                        <SafeAreaProvider>
+                            <View className='flex-1 flex-row'>
+                                <View className='w-1/2 h-full bg-teal-100'>
+                                    <NavBar setVisibleNavBar={setVisibleNavBar} NavBar={NavBar}/>
+                                </View>
+                                <Pressable className='flex-1 bg-black/50' onPress={() => setVisibleNavBar(false)}>
+                                </Pressable>
+                            </View>
+                        </SafeAreaProvider>
+                        
+                        
+                    </Modal>
+                    
 
 
 
@@ -392,8 +362,8 @@ const studyTracker = (): ReactNode => {
 
 
                     <View className='h-52 ml-4'>
-                        <View className='h-16 justify-center'>
-                            <Text className=' text-3xl font-bold text-stone-900'>10 / 12 Items Studied!!!</Text>
+                        <View className='h-8 justify-center'>
+                            <Text className=' text-3xl font-bold text-stone-900'></Text>
                         </View>
 
 
@@ -401,7 +371,7 @@ const studyTracker = (): ReactNode => {
                             <FlatList
                                 className=''
                                 ref={dateListRef}
-                                initialScrollIndex={formattedDay-1}
+                                initialScrollIndex={Number(activeID.slice(8,10))-1}
                                 getItemLayout={(data, index) => ({
                                     length: 65,
                                     offset: 8 + (65 * (index - 1)),
@@ -447,13 +417,13 @@ const studyTracker = (): ReactNode => {
                         </View>
                         <View className='flex-grow pl-3 pt-3'>
                             <View className='self-start'>
-                                <Text className='bg-blue-400 w-fit py-1 px-2 rounded-xl text-stone-100'>{item.remainingStudySessions} Days Left!</Text>
+                                <Text className='bg-blue-400 w-fit py-1 px-2 rounded-xl text-stone-100'>{handleRemainingStudySessions(item.extraDates)} Days Left!</Text>
                             </View>
                             <Text className='pt-2 font-bold text-base'>{item.assignmentName}</Text>
                             <Text className='pt-2 font-normal text-sm flex-1 line-clamp-1 w-60'>{item.assignmentDescription}</Text>
                         </View>
                         <View className='w-16 items-center justify-center'>
-                            <ToggleButton assignmentId={item.assignmentID} finishedAssignment={handleFinishedAssignments}/> 
+                            <ToggleButton activeID={activeID} extraDates={item.extraDates} alreadyCompletedAssignment={item.isCompleted} assignmentId={item.assignmentID} finishedAssignment={handleFinishedAssignments}/> 
                         </View>
                     </View>
                 )

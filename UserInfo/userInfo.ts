@@ -50,6 +50,7 @@ export type studyItemsAPICallType = {
     icon: string
     is_Completed: string
     extra_dates: futureStudiesObjType
+    intervals: futureStudiesObjType
 }
 
 export type dateObjType = {
@@ -97,6 +98,17 @@ export type TokenPackageType = {
     refreshToken:string,
 }
 
+export type NavBarLinksObjectList = {
+    name: string,
+    addOnData: string | null
+}
+
+export type UserApiType = {
+    username:string
+    pk: string
+    email: string
+}
+
 
 
 export enum Months {
@@ -126,43 +138,38 @@ export enum Months {
 export async function getAllEarliestDateObj() {
     let userStudyObjNew:studyItemsType[] = []
     const accessToken = await getAccessToken()
-    if (accessToken) {
-        try {
-        const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Assignment/`, {
-            headers: {
-                "ngrok-skip-browser-warning": "true",
-                'Authorization': `Bearer ${accessToken}`
-            }
-        })
-        const responses:studyItemsAPICallType[] = response.data
-        responses.map((response) => {
-                userStudyObjNew?.push({
-                assignmentName: response.assignment_name,
-                assignmentID: String(response.assignment_ID),
-                assignmentDescription: response.assignment_description,
-                dateAdded: (response.date_started),
-                remainingStudySessions: Number(response.remaining_study_sessions),
-                subject: response.subject.name,
-                icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
-                isCompleted: Boolean(response.is_Completed),
-                dateaddedObj: new Date(response.date_started),
-                dateStartedId: String(response.date_started),
-                extraDates: response.extra_dates
+    if (!accessToken) return false
+    
+    try {
+        const {data} = await axios.get<studyItemsAPICallType[]>(
+            `${process.env.EXPO_PUBLIC_API_URL}/api/Assignment/`, 
+            {headers: {"ngrok-skip-browser-warning": "true", 'Authorization': `Bearer ${accessToken}`}}
+        )
 
-            })
-        })
-        } catch (error) {
-            console.log('getAllEarliestDateObj')
-            console.error(error)
-        }
-
-        const earliestStudyObj = userStudyObjNew.reduce((earliest, current) => {
-            return new Date(current.dateAdded) < new Date(earliest.dateAdded) ? current : earliest
-        })
-        return earliestStudyObj
-    } else {
-        return false
+        userStudyObjNew = data.map((response) => ({
+            assignmentName: response.assignment_name,
+            assignmentID: String(response.assignment_ID),
+            assignmentDescription: response.assignment_description,
+            dateAdded: (response.date_started),
+            remainingStudySessions: Number(response.remaining_study_sessions),
+            subject: response.subject.name,
+            icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
+            isCompleted: Boolean(response.is_Completed),
+            dateaddedObj: new Date(response.date_started),
+            dateStartedId: String(response.date_started),
+            extraDates: intervalDateAdder(response.intervals, response.date_started)
+        }))
+    } catch (error) {
+        console.log('getAllEarliestDateObj')
+        console.error(error)
     }
+
+    if (userStudyObjNew.length === 0) return false
+
+    const earliestStudyObj = userStudyObjNew.reduce((earliest, current) => 
+        new Date(current.dateAdded) < new Date(earliest.dateAdded) ? current : earliest
+    )
+    return earliestStudyObj
 }
 
 
@@ -198,98 +205,112 @@ export async function getSubjectInfo(): Promise<subjectInfoType[] | false>  {
     let responses:SubjectApiInfoType[] = []
     const studyInfoObj:subjectInfoType[] = []
     const accessToken = await getAccessToken()
-    if (accessToken)  {
-        try {
-            const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Subject_Info/`, {
-                headers: {
-                    "ngrok-skip-browser-warning": "true",
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            })
-            responses = response.data
-        } catch(error) {
-        }
-        responses.forEach((response) => {
-            if (true) {
-                studyInfoObj.push({
-                    icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
-                    subjectName: response.subject_name.name,
-                    numSubStudyItems: Number(response.num_sub_study_items),
-                    id: response.id,
-                })
-            }
-        })
-        return studyInfoObj
-    } else {
+    if (!accessToken)  return false
+    
+    try {
+        const response = await axios.get(
+            `${process.env.EXPO_PUBLIC_API_URL}/api/Subject_Info/`, 
+            {headers: {"ngrok-skip-browser-warning": "true", 'Authorization': `Bearer ${accessToken}`}}
+        )
+        responses = response.data
+    } catch(error) {
+        console.log('Status:', error.response.status);
+        console.log('Error data:', error.response.data);
+        console.log('error at getUserStudyItem')
         return false
     }
+    responses.forEach((response) => {
+        if (true) {
+            studyInfoObj.push({
+                icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
+                subjectName: response.subject_name.name,
+                numSubStudyItems: Number(response.num_sub_study_items),
+                id: response.id,
+            })
+        }
+    })
+    return studyInfoObj
 }
 
+function addDays(dateStr: string, days: number): string {
+  // "YYYY-MM-DD" strings are parsed as UTC midnight
+  const date = new Date(dateStr);
+  date.setUTCDate(date.getUTCDate() + days); // handles month and year rollover
+  return date.toISOString().slice(0, 10);    // back to "YYYY-MM-DD"
+}
 
+//this function dynamically adds the date to the object when it arrives
+function intervalDateAdder(responses:any, dateStarted:any) {
+    // checks to see if this interval obj is already formatted correct and if so returns the response
+    if ((responses[1].some(item => typeof(item)==='boolean')) && (responses[1].some(item => typeof(item)==='string'))) {
+        return responses
+    }
 
-export async function getUserStudyItems(newStudySession?:studyItemsType): Promise<studyItemsType[] | false> {
-    let userStudyObjNew:studyItemsType[] = []
+    let newIntervalList = {}
+    for (const i in responses) {
+        newIntervalList[i] = [addDays(dateStarted,Number(i)), responses[i][0]] 
+    }
+    return newIntervalList
+}
+
+export async function getUserStudyItems(): Promise<studyItemsType[] | false> {
     const accessToken = await getAccessToken()
-    if (accessToken) {
-        try {
-        const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Assignment/`, {
-            headers: {
-                "ngrok-skip-browser-warning": "true",
-                'Authorization': `Bearer ${accessToken}`
-            }
-        })
-        const responses:studyItemsAPICallType[] = response.data
-        responses.map((response) => {
-                userStudyObjNew?.push({
-                assignmentName: response.assignment_name,
-                assignmentID: String(response.assignment_ID),
-                assignmentDescription: response.assignment_description,
-                dateAdded: (response.date_started),
-                remainingStudySessions: Number(response.remaining_study_sessions),
-                subject: response.subject.name,
-                icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
-                isCompleted: Boolean(response.is_Completed),
-                dateaddedObj: new Date(response.date_started),
-                dateStartedId: String(response.date_started),
-                extraDates: response.extra_dates,
-            })
-        })
-        } catch (error) {
-            console.log('Status:', error.response.status);
-            console.log('Error data:', error.response.data);
-            console.log('error at getUserStudyItem')
-            return false
-        }
-        return userStudyObjNew
-    } else {
+    if (!accessToken) {
         return false
     }
     
+    try {
+        const { data } = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Assignment/`, {
+            headers: {
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${accessToken}`
+            }
+        })
+        
+        return data.map((response) => ({
+            assignmentName: response.assignment_name,
+            assignmentID: String(response.assignment_ID),
+            assignmentDescription: response.assignment_description,
+            dateAdded: (response.date_started),
+            remainingStudySessions: Number(response.remaining_study_sessions),
+            subject: response.subject.name,
+            icon: response.icon ? {uri: response.icon} : require('../assets/icons/BookIcon.jpg'),
+            isCompleted: Boolean(response.is_Completed),
+            dateaddedObj: new Date(response.date_started),
+            dateStartedId: String(response.date_started),
+            extraDates: intervalDateAdder(response.intervals, response.date_started),
+    }))
+    
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.log('Status:', error.response?.status)
+            console.log('Error data:', error.response?.data)
+        } else {
+            console.log('Unexpected error:', error)
+        }
+        console.log('error at getUserStudyItems')
+        return false
+    }
 }
 
 
 
 export async function getSubjectList(): Promise<SubjectName[] | false> {
-    let names: SubjectName[] = []
     const accessToken = await getAccessToken()
-    if (accessToken) {
-        try {
-            const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Subject/`, {
-                headers: {
-                    "ngrok-skip-browser-warning": "true",
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            })
-            
-            const values = response.data.map((value:SubjectApiType) => {
-                names.push({name: value.name})
-            })
-        } catch (error) {
-            console.log('error at getSubjectList')
-            console.error(error)
-        }
-        return names
-    } else {
+    if (!accessToken) {
+        return false
+    }
+    try {
+        const { data } = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Subject/`, {
+            headers: {
+                "ngrok-skip-browser-warning": "true",
+                'Authorization': `Bearer ${accessToken}`
+            }
+        })
+        return data.map((value:SubjectApiType) => ({name: value.name}))
+    } catch (error) {
+        console.log('error at getSubjectList')
+        console.error(error)
         return false
     }
 }
@@ -298,31 +319,26 @@ export async function getSubjectList(): Promise<SubjectName[] | false> {
 
 export async function getUserData():Promise<userDataType | false> {
     const accessToken = await getAccessToken()
-    if (accessToken) {
-        let userData: userDataType = {
-                name: '',
-                id: '',
-                email: '',
-            }
-        try {
-            const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/auth/user/`, {
-                headers: {
-                    "ngrok-skip-browser-warning": "true",
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            })
-            userData = {
-                name: response.data['username'],
-                id: response.data['pk'],
-                email: response.data['email'],
-            }
-            
-        } catch(error) {
-            console.log('user data error', error)
-        }
-        return userData
-    } else {
+    if (!accessToken) {
         return false
+    }
+    
+    try {
+        const { data } = await axios.get<UserApiType>(`${process.env.EXPO_PUBLIC_API_URL}/api/auth/user/`, {
+            headers: {
+                "ngrok-skip-browser-warning": "true",
+                'Authorization': `Bearer ${accessToken}`
+            }
+        })
+        return {
+            name: data['username'],
+            id: data['pk'],
+            email: data['email'],
+        }
+        
+    } catch(error) {
+        console.log('user data error', error)
+        return {name: '', id: '', email: '',}
     }
 }
 
@@ -331,57 +347,98 @@ export async function getUserData():Promise<userDataType | false> {
 
 
 
-export async function addNewAssignment() {
+export async function addNewAssignment(newAssignmentObj:studyItemsType) {
     const accessToken = await getAccessToken()
-    if (accessToken) {
-        try {
-            const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/Subject/`, {
-                headers: {
-                    "ngrok-skip-browser-warning": "true",
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            })
-            // console.log('hit the api backend')
-            // console.log(response.data)
-            const chemStudySubject:SubjectApiType[] = response.data.filter(subject => subject['name'] === 'Chemistry')
-            // console.log(chemStudySubject)
-            const chemSubjectID = chemStudySubject[0]['subject_ID']
-            // console.log(chemSubjectID)
-
-            try {
-                const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/Assignment/`,
-                    {
-                        assignment_name: 'chemistry',
-                        assignment_description: 'moles',
-                        remainingStudySessions: '5',
-                        isCompleted: false,
-                        subject_id: chemSubjectID
-                    },
-                    {
-                    headers: {
-                        "ngrok-skip-browser-warning": "true",
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                })
-                // console.log(response.data)
-            } catch(error) {
-                console.log('Status:', error.response.status);
-                console.log('Error data:', error.response.data);
+    if (!accessToken) {
+        return false
+    }
+    try { //gets the id for the subject model the assignment is tied to
+        const {data} = await axios.get<SubjectApiType[]>(`${process.env.EXPO_PUBLIC_API_URL}/api/Subject/`, {
+            headers: {
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${accessToken}`
             }
-
-        } catch (error) {
-            console.log('Status:', error.response.status);
-            console.log('Error data:', error.response.data);
+        })
+        const chemStudySubjectID = data.find(subject => subject['name'] === newAssignmentObj.subject)?.subject_ID
+        if (!chemStudySubjectID) return false
+        
+         //adds the new assignment
+        await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/Assignment/`,
+            {
+                assignment_name: newAssignmentObj.assignmentName,
+                assignment_description: newAssignmentObj.assignmentDescription,
+                remainingStudySessions: String(newAssignmentObj.remainingStudySessions),
+                isCompleted: false,
+                subject_id: chemStudySubjectID
+            },
+            {
+            headers: {
+                "ngrok-skip-browser-warning": "true",
+                "Authorization": `Bearer ${accessToken}`
+            }
+        })
+        return true
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.log('addNewAssignment Status:', error.response?.status)
+            console.log('Error data:', error.response?.data)
         }
-
-    } else {
         return false
     }
 }
 
+export async function updateFinishedAssignment(id:string, isCompleted:boolean, newExtraDates:any) {
+    const accessToken = await getAccessToken()
+    if (!accessToken) return false
 
+    try {
+        await axios.patch(
+            `${process.env.EXPO_PUBLIC_API_URL}/api/Assignment/${id}/`, 
+            {intervals: newExtraDates},
+            {headers: {"ngrok-skip-browser-warning": "true", "Authorization": `Bearer ${accessToken}`}}
+        )
+        return true
 
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.log('updateFinishedAssignment Status:', error.response?.status)
+            console.log('Error data:', error.response?.data)
+        }
+        return false
+    }  
+}
 
+export async function addNewSubject(newSubjectName:string):Promise<boolean> { //figure out how this works!!!
+    const accessToken = await getAccessToken()
+    if (!accessToken) return false
+    let subjectUUID
+    let subjectName
+    try {
+        const responseSubject = await axios.post(
+            `${process.env.EXPO_PUBLIC_API_URL}/api/Subject/`,
+            {name: newSubjectName}, 
+            {headers: {"ngrok-skip-browser-warning": "true", 'Authorization': `Bearer ${accessToken}`}}
+        )
+
+        subjectUUID = responseSubject.data['subject_ID']
+        subjectName = responseSubject.data['name']
+
+        const responseSubjectInfo = await axios.post(
+            `${process.env.EXPO_PUBLIC_API_URL}/api/Subject_Info/`,
+            {num_sub_study_items: 6, subject_details: subjectUUID}, 
+            {headers: {"ngrok-skip-browser-warning": "true", 'Authorization': `Bearer ${accessToken}`}}
+        )
+        return true
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            console.log('Status:', error.response.status);
+            console.log('Server says:', JSON.stringify(error.response.data, null, 2));
+        } else {
+            console.log('Request failed:', error);
+        }
+        return false
+    }
+}
 
 
 

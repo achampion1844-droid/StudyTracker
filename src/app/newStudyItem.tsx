@@ -1,11 +1,12 @@
 import { View, Text, TextInput, Pressable } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import { dateObjType, getSubjectList, getUserStudyItems, Months, studyItemsType, SubjectName } from '../../UserInfo/userInfo'
+import { addNewAssignment, dateObjType, getSubjectInfo, getSubjectList, getUserStudyItems, Months, studyItemsType, SubjectApiInfoType, subjectInfoType, SubjectName } from '../../UserInfo/userInfo'
 import { useRouter } from 'expo-router'
 import { Selector } from 'rn-selector';
 import { formatDay, formatNumMonth, formatYear } from '../../functions/DateModifiers'
 import uuid from 'react-native-uuid';
+import { postNewUserStudyItem } from '../../UserInfo/postUserData'
 
 const newStudyItem = () => {
     const [newStudyItem, setNewStudyItem] = useState<studyItemsType | null>(null)
@@ -16,6 +17,10 @@ const newStudyItem = () => {
     const [response, setResponse] = useState<dateObjType | null>(null)
     const [Subjects, setSubjects] = useState<string[]>(['Chemistry','Biology', 'Physics', 'Wind_Symphony'])
     const [DateID, setDateID] = useState<string>('')
+
+    const date = new Date()
+    const formattedDate: string = date.toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})
+    
     type StudySubjectsObjType = {
         label:string,
         value:string,
@@ -24,11 +29,9 @@ const newStudyItem = () => {
     useEffect(() => {
         let isMounted = true
         async function getSubjectsAPI() {
-            if (isMounted) {
-                const subjectValue = await getSubjectList()
-                if (subjectValue) {
-                    setSubjects(subjectValue.map((name) => name.name))
-                }
+            const subjectValue = await getSubjectList()
+            if (isMounted && subjectValue) {
+                setSubjects(subjectValue.map((name) => name.name))
             }
         }
         getSubjectsAPI()
@@ -36,19 +39,18 @@ const newStudyItem = () => {
             isMounted = false
         }
     }, []) 
+
+    useEffect(() => {
+        setDateID(`${formatYear(date)}-${formatNumMonth(date)}-${formatDay(date).padStart(2,'0')}`)
+        setSubject(StudySubjectOptions[0].value)
+    },[])
     
 
     let StudySubjectOptions:StudySubjectsObjType[] = []
     for (const subjectName of Subjects) {
         StudySubjectOptions.push({label: subjectName, value: subjectName})
     }
-    useEffect(() => {
-        setSubject(StudySubjectOptions[0].value)
-    },[])
-
-    function getRandomInt(min: number, max: number): number {
-        return Math.floor(Math.random() * (max - min)) + min;
-    }
+    
     
 
 
@@ -57,27 +59,15 @@ const newStudyItem = () => {
         router.back()
     }
 
-    const date = new Date()
-    const formattedDate: string = date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+    
 
-    useEffect(() => {
-        const year = formatYear(date)
-        const month = formatNumMonth(date)
-        const day = formatDay(date)
-        setDateID(`${year}-${month}-${day.padStart(2,'0')}`)
-    },[])
+    
 
 
 
     function newAssignment() {
-        if (!subject) {
-            return
-        }
-        // console.log('newAssignmentObj creations')
+        if (!subject) return
+        
         const newAssignmentObj:studyItemsType = {
             assignmentName: assignmentName,
             assignmentID: String(uuid.v4()),
@@ -91,10 +81,8 @@ const newStudyItem = () => {
             dateStartedId: DateID,
             extraDates: {"14_days": ["2026-11-18", false], "1_days": ["2026-11-05", false], "28_days": ["2026-12-02", false], "3_days": ["2026-11-07", false], "7_days": ["2026-11-11", false], "84_days": ["2027-01-27", false]}
         }
-        // console.log(newAssignmentObj)
-        // console.log('dateID', newAssignmentObj.dateStartedId)
-        getUserStudyItems(newAssignmentObj)
-        router.back()
+        addNewAssignment(newAssignmentObj)
+        router.back()    
     }
   
     return (
@@ -128,9 +116,6 @@ const newStudyItem = () => {
                 selectedValue={subject}
                 onValueChange={(value) => setSubject(value)}
                 placeholder='Select your subject'
-                // styles={{ borderColor: '#007bff', borderWidth: 1 }}
-                //     dropdownStyle={{ backgroundColor: '#f8f9fa' }}
-                //     textStyle={{ color: '#343a40' }}
             />
         </View>
         <View className='flex-1 justify-start mt-4'>

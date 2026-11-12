@@ -4,7 +4,6 @@ import React from 'react'
 const DateButton = ({date, id, activeID, setActiveId, filterByDate}: {date:number, id:string, activeID:string, setActiveId: (id: string) => void, filterByDate: (id: string) => void}) => {
 
   function dateButtonPress() {
-    setActiveId(id)
     filterByDate(id)
   }
   // creates the date button that someone can press
