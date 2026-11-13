@@ -11,7 +11,8 @@ fix the date filtering on the date circles
 Add an AI feature that tells students ways that they can imporove their own scores
 
 
-why does the text in a text input suddenly move down when something is typed
+why does the text in a text input suddenly move down when something is typed?
+why are the percentages so weird for the messaging app?
 
 
 
@@ -19,6 +20,7 @@ why does the text in a text input suddenly move down when something is typed
 - when tapped, each assignment widget should expand
 - cause the main page to reload whenever sent back to the page
 
+HOW TO SIGN INTO DJANGO REST FRAMEWORK RESPONSES
 
 things I am learning
 - ternary operators

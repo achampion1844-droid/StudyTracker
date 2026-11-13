@@ -12,6 +12,8 @@ import StudyHeader from '../../../components/StudyHeader'
 import { Redirect, useRouter } from 'expo-router'
 import { formatDay, formatNumMonth, formatYear } from '../../../functions/DateModifiers'
 import NavBar from '../../../components/NavBar'
+import AddableNewSubject from '../../../components/newSubject'
+import SignUpModal from '../../../components/SignUp'
 
 
 
@@ -33,6 +35,7 @@ const studyTracker = (): ReactNode => {
     // variable for the new subject name
     const [newSubjectName, setNewSubjectName] = useState('')
     const [numberOfStudyItemsLeft, setNumberOfStudyItemsLeft] = useState<Number>(0)
+    const [expandedStudyItems, setExpandedStudyItems] = useState<string[]>([])
     
 
 
@@ -221,6 +224,10 @@ const studyTracker = (): ReactNode => {
         return Object.values(remainingStudySessions).filter(session => session[0] > activeID).length
     }
 
+    function expandStudyItemFunction(id:string) {
+        setExpandedStudyItems(prev => prev.includes(id) ? prev.filter(item => item !== id): [...prev, id])
+    }
+
     
 
 
@@ -229,29 +236,27 @@ const studyTracker = (): ReactNode => {
         <FlatList
             ListHeaderComponent={
                 <>
-
-
-
-                    <Pressable className='ml-3 h-6 w-10 border-black border-2 active:bg-black' onPress={testingFunction}>
+                    <Pressable className='ml-3 h-8 w-14 border-black border-2 active:bg-black justify-center items-center mb-2 rounded-lg' onPress={testingFunction}>
                         <View >
                             <Text>
-                                ++++++++
+                                =+=+=
                             </Text>
                         </View>
                     </Pressable>
 
-                    <Pressable className='ml-3 h-6 w-10  active:bg-blue-200' onPress={openNavBar}>
+
+                    <Pressable className='ml-3 h-14 w-14 active:bg-blue-200' onPress={openNavBar}>
                         <View >
-                            <Text className=''>
+                            <Text className='h-14 w-14 text-5xl flex pt-2 items-center justify-center'>
                                 ⚙️
                             </Text>
                         </View>
                     </Pressable>
 
 
-
                     <StudyHeader filterNewDate={handleNewDate} name={userData.name}/>
                     
+
                     <Modal
                     visible={visibleNavBar}
                     transparent
@@ -272,41 +277,18 @@ const studyTracker = (): ReactNode => {
                     </Modal>
                     
 
-
-
                     <Modal 
                         visible={isVisible} 
                         onRequestClose={() => setIsVisible(!isVisible)}
-                        // transparent={true}
                     >
-                        <View className='w-full justify-center h-2/5 md:w-40'>
-                            <View className='justify-center items-end mx-4'>
-                                <TouchableOpacity 
-                                    className='border-2 border-black h-12 w-12 justify-center items-center rounded-full'
-                                    onPress={() => setIsVisible(!isVisible)}>
-                                    <Text className='font-bold text-xl'>X</Text>
-                                </TouchableOpacity>
-                            </View>
-                            
-                            <View className='mt-6 items-center mx-4'>
-                                <TextInput 
-                                    onChangeText={setNewSubjectName}
-                                    value={newSubjectName}
-                                    className='border-2 border-black h-16 text-2xl w-full placeholder:text-gray-600 mx-4'
-                                    placeholder='New Subject Name'
-                                />
-                                <Pressable 
-                                    className='bg-customButtonBlue w-full mx-4 h-12 rounded-lg mt-2 flex justify-center items-center active:bg-customButtonActiveBlue'
-                                    onPress={newSubjectSubmitButtonPressed}
-                                    >
-                                    <Text className='text-gray-50 text-2xl pl-2'>Submit</Text>
-                                </Pressable>
-                            </View>
-                        </View>
+                        <AddableNewSubject 
+                            isVisible={isVisible}
+                            setIsVisible={setIsVisible}
+                            setNewSubjectName={setNewSubjectName}
+                            newSubjectName={newSubjectName}
+                            newSubjectSubmitButtonPressed={newSubjectSubmitButtonPressed}
+                        />
                     </Modal>
-
-
-
 
 
                     <SubjectScrollView 
@@ -314,51 +296,29 @@ const studyTracker = (): ReactNode => {
                         filterBySubject={handleFilterBySubject}
                         isVisible={isVisible}
                         setIsVisible={setIsVisible}
+                        studyItems={studyItems}
                     />
 
-                    
-                        <Modal
-                            visible={!isLoggedIn && !isSigningUp? true: false}
-                            pointerEvents='auto'
-                            animationType='fade'
-                            transparent={true}
-                            onRequestClose={() => setIsLoggedIn(true)}
-                        >
-                            <View className='w-full h-full bg-customBgBlue justify-center items-center'>
-                                <Text className='text-2xl text-red-500'>{loginErrorMessage}</Text>
-                                <Text className='text-4xl'>LOG IN</Text>
-                                <TextInput 
-                                    className='border-black border-2 w-[90%] h-14 pl-4 text-xl pb-1 bg-transparent rounded-full mt-8 placeholder:text-black'
-                                    onChangeText={setLoginUsername}
-                                    value={loginUsername}
-                                    placeholder='Username'
-                                />
-                                <TextInput 
-                                    className='border-black border-2 w-[90%] h-14 pl-4 text-xl pb-1 bg-transparent rounded-full mt-8 placeholder:text-black'
-                                    onChangeText={setLoginEmail}
-                                    value={loginEmail}
-                                    placeholder='Email'
-                                />
-                                <TextInput 
-                                    className='border-black border-2 w-[90%] h-14 pl-4 text-xl pb-1 bg-transparent rounded-full mt-8 placeholder:text-black'
-                                    onChangeText={setLoginPassword}
-                                    value={loginPassword}
-                                    placeholder='Password'
-                                />
-                                <Pressable className='w-[90%] h-14 mt-8 border-black border-2 justify-center items-center rounded-full active:bg-blue-100' onPress={LogIn}>
-                                    <Text className='text-4xl'>
-                                        Log In
-                                    </Text>
-                                </Pressable>
 
-                                <Pressable onPress={SignUp} className='w-[40%] h-14 mt-4 justify-center items-center rounded-full active:bg-blue-100'>
-                                        <Text className='text-xl text-blue-700'>Sign Up?</Text>
-                                </Pressable>
-                            </View>
-                        </Modal>
-
-
-
+                    <Modal
+                        visible={!isLoggedIn && !isSigningUp? true: false}
+                        pointerEvents='auto'
+                        animationType='fade'
+                        transparent={true}
+                        onRequestClose={() => setIsLoggedIn(true)}
+                    >
+                        <SignUpModal 
+                            loginErrorMessage={loginErrorMessage}
+                            setLoginUsername={setLoginUsername}
+                            loginUsername={loginUsername}
+                            setLoginEmail={setLoginEmail}
+                            loginEmail={loginEmail}
+                            setLoginPassword={setLoginPassword}
+                            loginPassword={loginPassword}
+                            SignUp={SignUp}
+                            LogIn={LogIn}
+                        />
+                    </Modal>
 
 
                     <View className='h-52 ml-4'>
@@ -411,21 +371,53 @@ const studyTracker = (): ReactNode => {
             ItemSeparatorComponent={() => <View className='h-4' />}
             renderItem={({item}) => {
                 return (
-                    <View className='border-2 border-black rounded-3xl h-28 flex-row mx-2 px-2'>
-                        <View className='justify-center items-center w-20'>
-                            <Icon source={item.icon} style={THEME.icon.size}/>
-                        </View>
-                        <View className='flex-grow pl-3 pt-3'>
-                            <View className='self-start'>
-                                <Text className='bg-blue-400 w-fit py-1 px-2 rounded-xl text-stone-100'>{handleRemainingStudySessions(item.extraDates)} Days Left!</Text>
+                    <>
+                    {!(expandedStudyItems.includes(item.assignmentID)) ? 
+                        <View className='border-2 border-black rounded-3xl h-28 flex-row mx-2 px-2'>
+                            <Pressable className='flex-1 flex-row' onPress={() => expandStudyItemFunction(item.assignmentID)}>
+                                <View className='justify-center items-center w-20'>
+                                    <Icon source={item.icon} style={THEME.icon.size}/>
+                                </View>
+                                <View className='flex-grow pl-3 pt-3'>
+                                    <View className='self-start'>
+                                        <Text className='bg-blue-400 w-fit py-1 px-2 rounded-xl text-stone-100'>{handleRemainingStudySessions(item.extraDates)} Days Left!</Text>
+                                    </View>
+                                    <Text className='pt-2 font-bold text-base'>{item.assignmentName}</Text>
+                                    <Text className='pt-2 font-normal text-sm flex-1 line-clamp-1 w-60'>{item.assignmentDescription}</Text>
+                                </View>
+                            </Pressable>
+                            
+                            <View className='w-16 items-center justify-center border-black border-l-2'>
+                                <ToggleButton activeID={activeID} extraDates={item.extraDates} alreadyCompletedAssignment={item.isCompleted} assignmentId={item.assignmentID} finishedAssignment={handleFinishedAssignments}/> 
                             </View>
-                            <Text className='pt-2 font-bold text-base'>{item.assignmentName}</Text>
-                            <Text className='pt-2 font-normal text-sm flex-1 line-clamp-1 w-60'>{item.assignmentDescription}</Text>
                         </View>
-                        <View className='w-16 items-center justify-center'>
-                            <ToggleButton activeID={activeID} extraDates={item.extraDates} alreadyCompletedAssignment={item.isCompleted} assignmentId={item.assignmentID} finishedAssignment={handleFinishedAssignments}/> 
-                        </View>
-                    </View>
+                    :
+                        <View className='rounded-3xl h-[500px] flex-row mx-2 px-2'>
+                            <Pressable className='border-black border-2 flex-1 flex-row rounded-3xl' onPress={() => expandStudyItemFunction(item.assignmentID)}>
+                                <View className='flex-col w-full'>
+                                    <View className='border-2 border-cyan-300 flex-row w-full h-28 rounded-3xl'>
+                                        <View className='flex-grow pl-3 pt-3 '>
+                                            <View className='self-start'>
+                                                <Text className='bg-blue-400 w-fit py-1 px-2 rounded-xl text-stone-100'>{handleRemainingStudySessions(item.extraDates)} Days Left!</Text>
+                                            </View>
+                                            <Text className='pt-2 font-bold text-base'>{item.assignmentName}</Text>
+                                            <Text className='pt-2 font-normal text-sm flex-1 line-clamp-1 w-60'>{item.assignmentDescription}</Text>
+                                        </View>
+                                
+                                
+                                        <View className='w-16 items-center justify-center'>
+                                            <ToggleButton activeID={activeID} extraDates={item.extraDates} alreadyCompletedAssignment={item.isCompleted} assignmentId={item.assignmentID} finishedAssignment={handleFinishedAssignments}/> 
+                                        </View>
+                                    </View>
+                                    <View className='flex-1 w-full justify-center items-center'>
+                                        <Text>Study Information</Text>
+                                    </View>
+                                </View>
+                                
+                            </Pressable>
+                        </View>}
+                    </>
+                    
                 )
             }}
             keyExtractor={item => item.assignmentID.toString()}

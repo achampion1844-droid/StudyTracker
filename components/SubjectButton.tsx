@@ -36,7 +36,7 @@ const SubjectButton = ({isActive, setIsActive, icon, subjectName, numSubStudyIte
                 </View>
                 <View className='w-36 items-center justify-center'>
                     <Text numberOfLines={1} className={`${isPressed ? 'text-white' : 'text-gray-900'} font-bold text-lg`}>{subjectName}</Text>
-                    <Text className={`${isPressed ? 'text-white' : 'text-gray-900'} font-extralight text-xs pt-1`}>{numSubStudyItems} Study Items Today</Text>
+                    <Text className={`${isPressed ? 'text-white' : 'text-gray-900'} font-extralight text-xs pt-1`}>{numSubStudyItems} Study Item{numSubStudyItems === 1 ? '': 's'} Today</Text>
                 </View>
             </View>
         </Pressable>
