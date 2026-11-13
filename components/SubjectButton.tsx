@@ -10,8 +10,6 @@ type SubjectButtonProp = subjectInfoType & {
 }
 const SubjectButton = ({isActive, setIsActive, icon, subjectName, numSubStudyItems, id, filterBySubject} : SubjectButtonProp) => {
     const isPressed = isActive === id
-    // console.log('Active:', isActive, typeof isActive)
-    // console.log('ID:', id, typeof id)
     const THEME = {
         icon: {
             size: 38
@@ -32,13 +30,13 @@ const SubjectButton = ({isActive, setIsActive, icon, subjectName, numSubStudyIte
   return (
     <View>
         <Pressable onPress={subjectIsPressed}>
-            <View className={`${isPressed ? 'bg-customStudyButton ' : 'bg-white'} h-20 w-48 rounded-2xl flex-row`}>
+            <View className={`${isPressed ? 'bg-customStudyButton ' : 'bg-white'} h-20 w-fit pr-4 rounded-2xl flex-row`}>
                 <View className='h-20 w-12 justify-center items-center'>
                     <Icon source={icon} style={THEME.icon.size}/>
                 </View>
                 <View className='w-36 items-center justify-center'>
-                    <Text className={`${isPressed ? 'text-white' : 'text-gray-900'} font-bold text-lg`}>{subjectName}</Text>
-                    <Text className={`${isPressed ? 'text-white' : 'text-gray-900'} font-extralight text-xs pt-1`}>{numSubStudyItems} Study Items Today</Text>
+                    <Text numberOfLines={1} className={`${isPressed ? 'text-white' : 'text-gray-900'} font-bold text-lg`}>{subjectName}</Text>
+                    <Text className={`${isPressed ? 'text-white' : 'text-gray-900'} font-extralight text-xs pt-1`}>{numSubStudyItems} Study Item{numSubStudyItems === 1 ? '': 's'} Today</Text>
                 </View>
             </View>
         </Pressable>

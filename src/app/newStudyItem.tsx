@@ -1,10 +1,12 @@
 import { View, Text, TextInput, Pressable } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import { dateObjType, getUserStudyItems, Months, studyItemsType } from '../../UserInfo/userInfo'
+import { addNewAssignment, dateObjType, getSubjectInfo, getSubjectList, getUserStudyItems, Months, studyItemsType, SubjectApiInfoType, subjectInfoType, SubjectName } from '../../UserInfo/userInfo'
 import { useRouter } from 'expo-router'
 import { Selector } from 'rn-selector';
-import { dateIdRetriever } from './(tabs)/StudyTracker'
+import { formatDay, formatNumMonth, formatYear } from '../../functions/DateModifiers'
+import uuid from 'react-native-uuid';
+import { postNewUserStudyItem } from '../../UserInfo/postUserData'
 
 const newStudyItem = () => {
     const [newStudyItem, setNewStudyItem] = useState<studyItemsType | null>(null)
@@ -13,37 +15,42 @@ const newStudyItem = () => {
     const [subject, setSubject] = useState<string | null>(null)
     const router = useRouter()
     const [response, setResponse] = useState<dateObjType | null>(null)
+    const [Subjects, setSubjects] = useState<string[]>(['Chemistry','Biology', 'Physics', 'Wind_Symphony'])
+    const [DateID, setDateID] = useState<string>('')
+
+    const date = new Date()
+    const formattedDate: string = date.toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})
+    
     type StudySubjectsObjType = {
         label:string,
         value:string,
     }
-    
-    
-    // this is a patch job and needs to be fixed by calling an api and getting the names of the different Subjects
-    const Subjects = [{
-        subjectName: 'Chemistry'
-    },
-    {
-        subjectName: 'Biology'
-    },
-    {
-        subjectName: 'Physics'
-    },]
 
-
-
-
-    let StudySubjectOptions:StudySubjectsObjType[] = []
-    for (const subjectName in Subjects) {
-        StudySubjectOptions.push({label: subjectName, value: subjectName})
-    }
     useEffect(() => {
+        let isMounted = true
+        async function getSubjectsAPI() {
+            const subjectValue = await getSubjectList()
+            if (isMounted && subjectValue) {
+                setSubjects(subjectValue.map((name) => name.name))
+            }
+        }
+        getSubjectsAPI()
+        return () => {
+            isMounted = false
+        }
+    }, []) 
+
+    useEffect(() => {
+        setDateID(`${formatYear(date)}-${formatNumMonth(date)}-${formatDay(date).padStart(2,'0')}`)
         setSubject(StudySubjectOptions[0].value)
     },[])
+    
 
-    function getRandomInt(min: number, max: number): number {
-        return Math.floor(Math.random() * (max - min)) + min;
+    let StudySubjectOptions:StudySubjectsObjType[] = []
+    for (const subjectName of Subjects) {
+        StudySubjectOptions.push({label: subjectName, value: subjectName})
     }
+    
     
 
 
@@ -52,44 +59,18 @@ const newStudyItem = () => {
         router.back()
     }
 
-    const date = new Date()
-    const formattedDate: string = date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+    
 
-    useEffect(() => {
-        const IDMonth: string = date.toLocaleDateString('en-US', {
-        month: 'short',
-        });
-
-        const IDDay: string = date.toLocaleDateString('en-US', {
-        day: 'numeric',
-        });
-
-        const IDYear: string = date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        });
-
-        setResponse(dateIdRetriever(Number(IDDay), IDMonth, Number(IDYear)) as dateObjType)
-        console.log('This is the response')
-        console.log(response)
-    },[])
+    
 
 
 
     function newAssignment() {
-        if (!subject) {
-            return
-        }
-        if (!response) {
-            console.log('uh oh')
-            return
-        }
+        if (!subject) return
+        
         const newAssignmentObj:studyItemsType = {
             assignmentName: assignmentName,
-            assignmentID: getRandomInt(10000000000,10000000000000),
+            assignmentID: String(uuid.v4()),
             assignmentDescription: assignmentDescription,
             dateAdded: formattedDate,
             remainingStudySessions: 5,
@@ -97,10 +78,11 @@ const newStudyItem = () => {
             icon: require('../../assets/icons/BookIcon.jpg'),
             isCompleted: false,
             dateaddedObj: date,
-            dateStartedId: response.id
+            dateStartedId: DateID,
+            extraDates: {"14_days": ["2026-11-18", false], "1_days": ["2026-11-05", false], "28_days": ["2026-12-02", false], "3_days": ["2026-11-07", false], "7_days": ["2026-11-11", false], "84_days": ["2027-01-27", false]}
         }
-        getUserStudyItems(newAssignmentObj)
-        router.push('/(tabs)/StudyTracker')
+        addNewAssignment(newAssignmentObj)
+        router.back()    
     }
   
     return (
@@ -134,9 +116,6 @@ const newStudyItem = () => {
                 selectedValue={subject}
                 onValueChange={(value) => setSubject(value)}
                 placeholder='Select your subject'
-                // styles={{ borderColor: '#007bff', borderWidth: 1 }}
-                //     dropdownStyle={{ backgroundColor: '#f8f9fa' }}
-                //     textStyle={{ color: '#343a40' }}
             />
         </View>
         <View className='flex-1 justify-start mt-4'>

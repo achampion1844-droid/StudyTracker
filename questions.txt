@@ -1,1 +1,35 @@
-why does the subjects button compontent rerender whenever the date buttons rerenders
+how to add a bluring effect on the adding new subjects popup
+why does md: crash the program
+
+
+
+fix having two chemistry subjects
+seperate the different modules and different types of functions into their own files
+fix the date filtering on the date circles
+
+
+Add an AI feature that tells students ways that they can imporove their own scores
+
+
+why does the text in a text input suddenly move down when something is typed?
+why are the percentages so weird for the messaging app?
+
+
+
+****TODO
+- when tapped, each assignment widget should expand
+- cause the main page to reload whenever sent back to the page
+
+HOW TO SIGN INTO DJANGO REST FRAMEWORK RESPONSES
+
+things I am learning
+- ternary operators
+- or operators
+- and operators
+.filter
+.find
+.includes
+.some
+.reduce
+Object.values
+- ??
